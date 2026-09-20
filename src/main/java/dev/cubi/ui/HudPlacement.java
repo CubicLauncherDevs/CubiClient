@@ -2,6 +2,22 @@ package dev.cubi.ui;
 
 /** GUI-coordinate placement shared by the editor and its boundary tests. */
 public final class HudPlacement {
+    /** Left: FPS, keys, ping. Right: server above coordinates and a vertical armor column. */
+    public static int defaultX(int module, int screenWidth, int width) {
+        if (module == 4) return Math.max(12, screenWidth - width - 96);
+        return module < 3 ? 12 : Math.max(12, screenWidth - width - 12);
+    }
+    public static int defaultY(int module) {
+        switch (module) {
+            case 0: return 12;
+            case 1: return 44;
+            case 2: return 146;
+            case 3: return 44;
+            case 4: return 44;
+            case 5: return 12;
+            default: throw new IllegalArgumentException("Unknown module slot");
+        }
+    }
     private HudPlacement() { }
     public static float snap(float position, float size, float screen, float threshold) {
         float best = position, distance = threshold;

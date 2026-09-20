@@ -56,6 +56,8 @@ Con el jar de reemplazo, `Game189` usa el classloader que cargó Cubi y Minecraf
 
 Con `hudBatching`, cada widget agrupa su geometría del atlas entre la aplicación y retirada de su matriz. Dentro de `glBegin` solamente cambia color y emite vértices/coordenadas; cualquier rectángulo vanilla fuerza un cierre previo. La marca usa un bloque independiente. Los controles del menú mantienen su dibujo habitual.
 
+`Ink.item` también termina la geometría pendiente antes de dibujar equipo. `Game189.item` usa `RenderItem.b(ItemStack,int,int)` y la iluminación GUI vanilla, restaura la prueba/escritura de profundidad y termina con alpha/color/blending coherentes con `GlStateManager`. El atlas vuelve a enlazarse al siguiente texto o superficie; los objetos usan las texturas y modelos de Minecraft, incluidos los paquetes de recursos.
+
 `UiAssets` rasteriza Cantarell Regular/Bold a 36 píxeles y los iconos originales de Cubi durante la compilación. Comprueba la familia de la fuente y que los glifos quepan en sus celdas. Produce `atlas.png` de 2048 × 1024, métricas binarias y una copia de la licencia OFL. El runtime carga una sola textura (8 MiB RGBA), reutilizada durante toda la sesión. No genera glifos, imágenes o geometría curva por fotograma. Los fondos y los bordes usan máscaras de nueve secciones; la máscara del borde tiene un centro transparente para no rellenar de nuevo los widgets translúcidos. Las animaciones usan tiempo transcurrido, no incrementos por FPS.
 
 ## Ciclo de vida y módulos
@@ -76,11 +78,19 @@ No hay un bus de eventos reflectivo ni objetos de evento creados en cada fotogra
 2. Implementa `paint(CubiClient, Ink, boolean preview)`. Usa datos ya preparados cuando sea posible.
 3. Usa `tick` si necesitas muestrear información del juego. Reserva el dibujo para lo visual.
 4. Registra el módulo en el array de `ModuleRegistry`.
-5. Amplía la lista del panel si superas los dos espacios actuales (FPS y Keystrokes con CPS).
+5. Actualiza `ModuleRegistry.COUNT`, las posiciones iniciales en `HudPlacement` y sus pruebas. El navegador pagina automáticamente en cuatro tarjetas (2 × 2), con regiones de vista previa lateral en `DeckLayout.CARD_PREVIEWS`; `DeckState.visibleModule` convierte la ranura visible en índice real, también al activar o abrir ajustes.
 
 El contrato común se encarga de escala, posición, persistencia y representación en el editor. Si un nuevo módulo necesita acceder al juego, añade el acceso cacheado a `Game189` y su comprobación al test de mappings.
 
 `ModuleRegistry.frames` y `ModuleRegistry.keys` identifican los consumidores sin depender del índice del array. Keystrokes muestra los CPS bajo LMB/RMB: los eventos se capturan mientras está activo y las etiquetas se preparan en el tick. Al desactivarlo, los buffers se vacían. Mantiene su ID `keys` y dimensiones 82 × 94; los ajustes heredados `clicks` se conservan en el JSON, sin registrar un widget independiente.
+
+Los otros cuatro widgets son `PingModule`, `ArmorModule`, `CoordinatesModule` y `ServerModule`. `Game189` consulta el ping de `NetworkPlayerInfo` mediante el UUID local; lee posiciones de `Entity` y la dirección de `ServerData`; obtiene las cuatro ranuras de armadura de `InventoryPlayer`, invirtiendo botas→casco a casco→botas. No se envían paquetes adicionales. `HudValues` centraliza redondeo de coordenadas, porcentaje acotado de durabilidad y estados sin conexión/datos. Se formatean etiquetas solamente cuando cambia su valor. `ModuleRegistry` llama a `clearData` al cambiar de mundo, incluso para módulos desactivados, liberando referencias al equipo anterior.
+
+Los módulos se construyen a partir de `ClientConfig`, sin crear Minecraft ni OpenGL. Esto permite comprobar el registro real, las posiciones iniciales y las migraciones en `HudTest`. La migración de distribución 2 se sigue aplicando a FPS/Keystrokes; los módulos nuevos reciben posiciones iniciales únicamente cuando faltaba su configuración. No se usa una revisión global para recolocar widgets ya personalizados.
+
+Armor Status usa una columna de cuatro filas. Su `styleRevision` aplica una sola vez el fondo transparente cuando aún estaba en la opacidad predeterminada; conserva las opciones ya personalizadas. El deslizador común admite 0–85% de opacidad y a 0% omite fondo, borde y sombra del panel. La sombra del texto sigue siendo independiente.
+
+`Game189.serverIcon` obtiene el favicon Base64 guardado en `ServerData.c()`, como la lista vanilla. `ServerIcon` decodifica únicamente al cambiar esos datos, comprueba las dimensiones PNG 64 × 64 antes de leer los píxeles y conserva una textura. `Ink.image` vacía el atlas antes de enlazarla; la textura anterior se elimina mediante `GlStateManager` al cambiar de icono o mundo. Sin favicon se muestra el icono de servidor del atlas. No se realizan peticiones de red adicionales.
 
 ## Identidad visual
 
@@ -101,7 +111,7 @@ El panel usa un lienzo lógico **560 × 362** que se adapta a la pantalla. Las v
 
 ### Navegación y distribución
 
-- `DeckState` gestiona Módulos, Apariencia, Rendimiento, Diagnóstico, Ajustes y Editor, la selección y el foco de captura de teclas. No depende de Minecraft ni de OpenGL.
+- `DeckState` gestiona Módulos, Apariencia, Rendimiento, Diagnóstico, Ajustes y Editor, la selección, la página del navegador y el foco de captura de teclas. Volver desde Ajustes conserva la página correspondiente; cambiar de selección en el editor actualiza la página para que siga siendo accesible. No depende de Minecraft ni de OpenGL.
 - `DeckLayout` comparte dimensiones y regiones de clic entre dibujo, interacción y pruebas. La activación de una tarjeta tiene un área distinta de su engranaje.
 - `ControlDeck` dibuja y despacha las acciones de la vista activa. Los ajustes del módulo van en una columna junto a su previsualización; los globales pertenecen a Apariencia.
 - Esc cancela primero una captura, vuelve desde Ajustes a Módulos o desde Editor a su origen. La tecla del menú cierra toda la interfaz cuando no se está capturando un atajo.

@@ -18,17 +18,21 @@ public final class DeckLayout {
     public static final Rect MODULE_BIND = new Rect(400, 283, 124, 24);
     public static final Rect THEME = new Rect(20, 148, 210, 164), GENERAL = new Rect(246, 148, 294, 164);
     public static final Rect WATERMARK = new Rect(492, 158, 32, 24), MENU_BIND = new Rect(416, 211, 108, 25);
-    public static final Rect[] CARDS = new Rect[2], TOGGLES = new Rect[2], SETTINGS = new Rect[2], ACCENTS = new Rect[4];
+    public static final int MODULES_PER_PAGE = 4;
+    public static final Rect MODULE_PREVIOUS = new Rect(390, 114, 28, 26), MODULE_NEXT = new Rect(512, 114, 28, 26);
+    public static final Rect[] CARDS = new Rect[MODULES_PER_PAGE], TOGGLES = new Rect[MODULES_PER_PAGE], SETTINGS = new Rect[MODULES_PER_PAGE], ACCENTS = new Rect[4];
+    public static final Rect[] CARD_PREVIEWS = new Rect[MODULES_PER_PAGE];
     public static final int EDITOR_WIDTH = 304, EDITOR_HEIGHT = 44;
     public static final Rect EDITOR_MINUS = new Rect(100, 18, 18, 18), EDITOR_PLUS = new Rect(157, 18, 18, 18);
     public static final Rect EDITOR_RESET = new Rect(185, 10, 68, 24), EDITOR_DONE = new Rect(260, 10, 34, 24);
     static {
         for (int i = 0; i < PERFORMANCE_OPTIONS.length; i++) PERFORMANCE_OPTIONS[i] = new Rect(20 + (i % 2) * 266, 150 + (i / 2) * 24, 254, 22);
         for (int i = 0; i < CARDS.length; i++) {
-            int x = 20 + i * 266;
-            CARDS[i] = new Rect(x, 148, 254, 164);
-            TOGGLES[i] = new Rect(x + 12, 278, 186, 23);
-            SETTINGS[i] = new Rect(x + 210, 278, 32, 23);
+            int x = 20 + (i % 2) * 266, y = 148 + (i / 2) * 92;
+            CARDS[i] = new Rect(x, y, 254, 84);
+            TOGGLES[i] = new Rect(x + 10, y + 54, 108, 22);
+            SETTINGS[i] = new Rect(x + 126, y + 54, 26, 22);
+            CARD_PREVIEWS[i] = new Rect(x + 164, y + 10, 80, 64);
         }
         for (int i = 0; i < 4; i++) ACCENTS[i] = new Rect(34 + 44 * i, 238, 34, 30);
     }
@@ -36,7 +40,7 @@ public final class DeckLayout {
     public static float zoom(int width, int height) { return Math.max(0.1f, Math.min(1, Math.min((width - 16f) / WIDTH, (height - 16f) / HEIGHT))); }
     public static float originX(int width, float zoom) { return (width - WIDTH * zoom) / 2; }
     public static float originY(int height, float zoom) { return (height - HEIGHT * zoom) / 2; }
-    public static float opacityAt(float x) { return 0.1f + Math.max(0, Math.min(1, (x - OPACITY.x - 5) / (OPACITY.w - 10))) * 0.75f; }
+    public static float opacityAt(float x) { return Math.max(0, Math.min(1, (x - OPACITY.x - 5) / (OPACITY.w - 10))) * 0.85f; }
     public static int editorX(int width) { return (width - EDITOR_WIDTH) / 2; }
     public static int editorY(int height) { return height - EDITOR_HEIGHT - 10; }
 

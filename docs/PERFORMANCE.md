@@ -25,7 +25,7 @@ Las opciones vanilla se guardan en `options.txt` usando su rutina original; el p
 ## Optimizaciones implementadas
 
 - **Resolución GUI cacheada:** invalida por ancho, alto, escala y modo Unicode efectivo.
-- **HUD agrupado:** las primitivas de atlas de cada widget comparten un bloque de geometría; se conserva el orden de transparencias y se termina el bloque antes de cambiar matrices o dibujar rectángulos vanilla. El color pasa por `GlStateManager` para mantener su caché sincronizada.
+- **HUD agrupado:** las primitivas de atlas de cada widget comparten un bloque de geometría; se conserva el orden de transparencias y se termina el bloque antes de cambiar matrices, dibujar rectángulos vanilla o renderizar objetos de Armor Status. El color pasa por `GlStateManager` para mantener su caché sincronizada.
 - **Ruta de HUD vacío:** no dibuja ni cronometra si están desactivados todos los módulos y la marca. FPS/CPS se preparan cuando el módulo correspondiente está activo.
 - **Culling conservador de partículas:** antes de emitir un billboard estándar, comprueba su caja interpolada y escalada contra los planos de cámara. Captura el frustum una vez por pasada que tenga partículas elegibles; no consulta GL por partícula. La caja incluye margen de redondeo y conserva efectos que tocan el borde.
 

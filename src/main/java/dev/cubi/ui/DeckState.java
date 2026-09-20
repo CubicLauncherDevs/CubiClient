@@ -6,7 +6,7 @@ public final class DeckState {
     public static final int NO_BINDING = -1, MENU_BINDING = -2;
     private final int moduleCount;
     private Page page = Page.MODULES, editorReturn = Page.MODULES;
-    private int selected, binding = NO_BINDING;
+    private int selected, modulePage, binding = NO_BINDING;
 
     public DeckState(int moduleCount) {
         if (moduleCount < 1) throw new IllegalArgumentException("At least one HUD module is required");
@@ -14,13 +14,25 @@ public final class DeckState {
     }
     public Page page() { return page; }
     public int selected() { return selected; }
+    public int modulePage() { return modulePage; }
+    public int modulePages() { return (moduleCount + DeckLayout.MODULES_PER_PAGE - 1) / DeckLayout.MODULES_PER_PAGE; }
+    public int visibleModule(int slot) {
+        if (slot < 0 || slot >= DeckLayout.MODULES_PER_PAGE) return -1;
+        int index = modulePage * DeckLayout.MODULES_PER_PAGE + slot;
+        return index < moduleCount ? index : -1;
+    }
+    public void turnModules(int direction) {
+        if (page != Page.MODULES || capturing()) return;
+        modulePage = Math.max(0, Math.min(modulePages() - 1, modulePage + direction));
+    }
     public int binding() { return binding; }
     public boolean capturing() { return binding != NO_BINDING; }
     public void select(int index) {
         if (index < 0 || index >= moduleCount) throw new IllegalArgumentException("Invalid module index");
         selected = index;
+        modulePage = selected / DeckLayout.MODULES_PER_PAGE;
     }
-    public void nextModule() { selected = (selected + 1) % moduleCount; }
+    public void nextModule() { select((selected + 1) % moduleCount); }
     public void tab(Page target) {
         if (target != Page.MODULES && target != Page.APPEARANCE && target != Page.PERFORMANCE) throw new IllegalArgumentException("Not a root tab");
         page = target;

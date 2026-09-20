@@ -37,12 +37,13 @@ public final class ClientConfig {
         public float x = 0.02f, y = 0.03f, scale = 1.0f;
         public boolean background = true, shadow = true;
         public float opacity = 0.48f;
+        public int styleRevision;
 
         public void sanitize() {
             x = finiteClamp(x, 0, 1, 0.02f);
             y = finiteClamp(y, 0, 1, 0.03f);
             scale = finiteClamp(scale, 0.75f, 2.0f, 1);
-            opacity = finiteClamp(opacity, 0.1f, 0.85f, 0.48f);
+            opacity = finiteClamp(opacity, 0, 0.85f, 0.48f);
             if (key < 0 || key > 255 || key == 1) key = 0;
         }
     }
@@ -91,7 +92,7 @@ public final class ClientConfig {
 
     public ModuleState state(String id) {
         ModuleState state = modules.get(id);
-        if (state == null) { state = new ModuleState(); modules.put(id, state); }
+        if (state == null) { state = new ModuleState(); modules.put(id, state); dirty = true; }
         state.sanitize();
         return state;
     }

@@ -2,7 +2,24 @@
 
 Versión del cliente: **0.0.1**. Los apartados históricos describen etapas de desarrollo, no incrementos de versión.
 
-## Ejecutado en este entorno
+## Ajuste visual posterior · 2026-09-20
+
+El navegador muestra ahora cuatro tarjetas por página (2 × 2), con vistas previas laterales y dos páginas para los seis módulos. Este cambio también se compila sin ejecutar pruebas; las expectativas anteriores de paginación quedan pendientes de adaptar.
+
+Ping tiene las dimensiones de FPS (70 × 24); Armor Status es vertical (64 × 88), con fondo transparente por defecto y opacidad ajustable desde 0%; Servidor es una fila compacta (136 × 24) con el favicon de la lista vanilla cuando está disponible. Se compila mediante `python3 tools/build.py --replacement`. **Por petición del usuario, se dejan las pruebas para después:** no se ejecutan las suites ni se abre Minecraft. Los resultados del apartado siguiente corresponden al diseño anterior. Quedan pendientes la adaptación de las expectativas de geometría/opacidad y la comprobación gráfica del favicon y de la nueva distribución.
+
+## Módulos básicos y paginación, antes del ajuste visual · 2026-09-20
+
+Se ejecutaron `python3 tools/build.py --replacement --test` y `python3 -m unittest discover -s tools -p 'test_*.py'` con Java 8: **301 comprobaciones Java**, validación del jar de reemplazo, enlace JVM `-Xverify:all` y **7 pruebas Python**.
+
+- `HudTest` comprueba el registro real de seis módulos, coordenadas negativas y límites del mundo, ping ausente frente a cero, conservación de direcciones/puertos/IPv6, estados de desconexión y mundo local, durabilidad acotada y equipo no desgastable.
+- Verifica posiciones iniciales sin solapamientos a 320×240, 426×240, 854×480 y 1920×1080; incorporación de módulos ausentes conservando posiciones, escalas, atajos, visibilidad y datos heredados; idempotencia y persistencia después de reiniciar.
+- `DeckTest` comprueba las tres páginas, correspondencia entre tarjetas e índices, regreso desde Ajustes/Editor, límites y páginas incompletas. Los nuevos iconos se comprueban en el atlas generado.
+- `SelfTest` contrasta los nuevos campos y métodos ofuscados contra el jar original: jugador/UUID, lista de jugadores y ping, servidor, inventario/armadura, daño y máximo de los objetos, renderer e iluminación GUI.
+
+**Pendiente de verificación gráfica:** esta entrega no ha abierto Minecraft. `SmokeTest` está ampliado para recorrer las nuevas páginas, probar sus controles y previsualizaciones, leer ping/servidor local, equipar/dañar/retirar objetos en su mundo aislado y dibujar armadura con batching activado/desactivado comprobando errores GL y estado de profundidad. Esta regresión todavía no se ha ejecutado. Las capturas históricas siguientes no muestran estos cuatro módulos; también queda pendiente verificar los datos en una conexión multijugador real.
+
+## Entrega anterior ejecutada en este entorno
 
 Última verificación de la entrega de rendimiento: **2026-09-19**. Entorno: Linux, OpenJDK **1.8.0_504**, Python 3 y OpenGL NVIDIA GeForce GTX 1650. No es una validación en varios tipos de hardware.
 
@@ -102,7 +119,7 @@ Se comprobó que el HUD puede medirse y dibujarse dentro del mundo. No se ha hec
 
 1. Usa el mismo mundo, resolución, distancia de renderizado y posición de cámara.
 2. Espera a que termine la generación de chunks y el calentamiento de la JVM.
-3. Compara optimizaciones activadas/desactivadas con los mismos ajustes. Para medir HUD vacío, desactiva FPS, Keystrokes **y la marca**; conserva F1/F3 iguales.
+3. Compara optimizaciones activadas/desactivadas con los mismos ajustes. Para medir HUD vacío, desactiva los seis módulos **y la marca**; conserva F1/F3 iguales.
 4. Registra tiempos de fotograma durante al menos un minuto en cada caso.
 5. Repite con la misma configuración en vanilla para separar el coste de Cubi del del motor.
 

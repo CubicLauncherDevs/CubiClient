@@ -37,8 +37,8 @@ public final class CubiClient {
         game = new Game189();
         ink = new Ink(game);
         config = ClientConfig.load(game.directory.toPath().resolve("cubiclient/config.json"));
-        modules = new ModuleRegistry(this);
-        modules.migrateLayout(this);
+        modules = new ModuleRegistry(config);
+        modules.migrateLayout(config, game.width, game.height);
         reconcilePerformance();
         config.save();
         Display.setTitle(ClientIdentity.NAME + " | " + ClientIdentity.MINECRAFT);

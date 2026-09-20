@@ -1,23 +1,32 @@
 package dev.cubi.module;
 
 import dev.cubi.core.CubiClient;
+import dev.cubi.config.ClientConfig;
 import dev.cubi.core.ClientIdentity;
 import dev.cubi.ui.HudPlacement;
 import dev.cubi.ui.Theme;
 
 /** Typed lifecycle dispatch. Stable array: no stream, reflection or event allocation. */
 public final class ModuleRegistry {
+    public static final int COUNT = 6;
     public final HudModule[] all;
     public final FrameModule frames;
     public final KeysModule keys;
+    private Object previousWorld;
 
-    public ModuleRegistry(CubiClient client) {
-        frames = new FrameModule(client);
-        keys = new KeysModule(client);
-        all = new HudModule[] {frames, keys};
+    public ModuleRegistry(ClientConfig config) {
+        frames = new FrameModule(config);
+        keys = new KeysModule(config);
+        all = new HudModule[] {frames, keys, new PingModule(config), new ArmorModule(config),
+                new CoordinatesModule(config), new ServerModule(config)};
     }
 
     public void tick(CubiClient client) throws Throwable {
+        Object world = client.game.worldIdentity();
+        if (world != previousWorld) {
+            for (HudModule module : all) module.clearData();
+            previousWorld = world;
+        }
         for (HudModule module : all) if (module.state.enabled) module.tick(client);
     }
     public boolean visible(CubiClient client) {
@@ -39,25 +48,31 @@ public final class ModuleRegistry {
         }
     }
     public void resetLayout(CubiClient client) {
-        int y = 12;
-        for (HudModule module : all) {
-            module.state.scale = 1;
-            module.position(12, y, client.game.width, client.game.height);
-            y += module.height + 8;
-        }
-        client.config.layoutInitialized = true;
-        client.config.layoutRevision = 2;
-        client.config.changed();
+        resetLayout(client.config, client.game.width, client.game.height);
     }
-    public void migrateLayout(CubiClient client) {
-        if (!client.config.layoutInitialized) { resetLayout(client); return; }
-        if (client.config.layoutRevision >= 2) return;
-        for (HudModule module : all) {
-            float x = module.state.x * Math.max(0, client.game.width - 96 * module.state.scale);
-            float y = module.state.y * Math.max(0, client.game.height - (module.id.equals("keys") ? 112 : 42) * module.state.scale);
-            module.position(x, y, client.game.width, client.game.height);
+    public void resetLayout(ClientConfig config, int width, int height) {
+        for (int i = 0; i < all.length; i++) { all[i].state.scale = 1; placeDefault(width, height, i); }
+        config.layoutInitialized = true;
+        config.layoutRevision = 2;
+        config.changed();
+    }
+    public void migrateLayout(ClientConfig config, int width, int height) {
+        if (!config.layoutInitialized) { resetLayout(config, width, height); return; }
+        for (int i = 0; i < all.length; i++) {
+            HudModule module = all[i];
+            if (module.newState) { placeDefault(width, height, i); config.changed(); }
+            else if (config.layoutRevision < 2 && i < 2) {
+                float x = module.state.x * Math.max(0, width - 96 * module.state.scale);
+                float y = module.state.y * Math.max(0, height - (module.id.equals("keys") ? 112 : 42) * module.state.scale);
+                module.position(x, y, width, height);
+            }
         }
-        client.config.layoutRevision = 2;
-        client.config.changed();
+        if (config.layoutRevision < 2) { config.layoutRevision = 2; config.changed(); }
+    }
+    private void placeDefault(int width, int height, int index) {
+        HudModule module = all[index];
+        module.position(HudPlacement.defaultX(index, width, module.pixelWidth()),
+                HudPlacement.defaultY(index), width, height);
+        module.newState = false;
     }
 }

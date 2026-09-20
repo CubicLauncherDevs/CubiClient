@@ -1,6 +1,7 @@
 package dev.cubi.ui;
 
 import dev.cubi.bridge.Game189;
+import org.lwjgl.opengl.GL11;
 
 /** Shared visual language for the HUD, module browser and editor. */
 public final class Ink {
@@ -16,6 +17,24 @@ public final class Ink {
     private int tint(int color) { return alpha(color, ((color >>> 24) / 255f) * opacity); }
     public void beginBatch() { atlas.beginBatch(); }
     public void endBatch() throws Throwable { atlas.endBatch(); }
+    public void item(Object stack, int x, int y) throws Throwable { atlas.flush(); game.item(stack, x, y); }
+    public void image(int texture, float x, float y, float size) throws Throwable {
+        atlas.flush();
+        game.textureInk(texture, tint(0xFFFFFFFF));
+        GL11.glBegin(GL11.GL_QUADS);
+        try {
+            GL11.glTexCoord2f(0, 0); GL11.glVertex2f(x, y);
+            GL11.glTexCoord2f(0, 1); GL11.glVertex2f(x, y + size);
+            GL11.glTexCoord2f(1, 1); GL11.glVertex2f(x + size, y + size);
+            GL11.glTexCoord2f(1, 0); GL11.glVertex2f(x + size, y);
+        } finally { GL11.glEnd(); game.finishInk(); }
+    }
+    public String ellipsize(String value, float available, float size, boolean bold) {
+        if (width(value, size, bold) <= available) return value;
+        int end = value.length();
+        while (end > 0 && width(value.substring(0, end) + "...", size, bold) > available) end--;
+        return value.substring(0, end) + "...";
+    }
     public void rect(int x, int y, int w, int h, int color) throws Throwable {
         atlas.flush();
         if (w > 0 && h > 0) game.rect(x, y, x + w, y + h, tint(color));

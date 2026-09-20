@@ -112,28 +112,35 @@ public final class ControlDeck {
 
     private static void drawModules(int mx, int my) throws Throwable {
         Ink ink = client.ink;
-        ink.text("Activa un módulo o abre sus ajustes.", 20, 123, 10, false, Theme.SECONDARY);
         int count = 0;
         for (HudModule module : client.modules.all) if (module.state.enabled) count++;
         String summary = count + " / " + client.modules.all.length + " activos";
-        ink.small(summary, WIDTH - 20 - ink.width(summary, 8, false), 124, Theme.MUTED);
-        for (int i = 0; i < client.modules.all.length; i++) {
+        ink.text("Módulos · " + summary, 20, 123, 10, false, Theme.SECONDARY);
+        if (nav.modulePages() > 1) {
+            if (nav.modulePage() > 0) action("<", MODULE_PREVIOUS, mx, my, false);
+            if (nav.modulePage() + 1 < nav.modulePages()) action(">", MODULE_NEXT, mx, my, false);
+            ink.center((nav.modulePage() + 1) + " / " + nav.modulePages(), 424, 123, 82, 9, true, Theme.SECONDARY);
+        }
+        for (int slot = 0; slot < CARDS.length; slot++) {
+            int i = nav.visibleModule(slot);
+            if (i < 0) continue;
             HudModule module = client.modules.all[i];
-            Rect card = CARDS[i], gear = SETTINGS[i];
+            Rect card = CARDS[slot], gear = SETTINGS[slot], preview = CARD_PREVIEWS[slot];
             float over = hover[i].to(card.contains(mx, my) ? 1 : 0);
             ink.surface(card.x, card.y, card.w, card.h, Theme.CARD_RADIUS,
                     Ink.mix(Theme.CARD, Theme.SELECTED, over * 0.5f), Ink.mix(Theme.BORDER, Theme.BORDER_HOVER, over));
-            ink.icon(module.id.equals("keys") ? 3 : 1, card.x + 14, card.y + 14, 17, Theme.SECONDARY);
-            ink.text(module.title, card.x + 38, card.y + 17, 12, true, Theme.TEXT);
-            ink.small(module.description, card.x + 14, card.y + 37, Theme.SECONDARY);
-            float previewScale = Math.min(1.1f, Math.min((card.w - 28f) / module.width, 64f / module.height));
+            ink.icon(module.icon(), card.x + 10, card.y + 10, 14, Theme.SECONDARY);
+            ink.text(module.title, card.x + 31, card.y + 12, 11, true, Theme.TEXT);
+            float descriptionSize = Math.min(8, 8 * 142 / Math.max(1, ink.width(module.description, 8, false)));
+            ink.text(module.description, card.x + 10, card.y + 32, descriptionSize, false, Theme.SECONDARY);
+            float previewScale = Math.min(1.1f, Math.min((float) preview.w / module.width, (float) preview.h / module.height));
             float alpha = ink.opacity;
             if (!module.state.enabled) ink.opacity *= 0.55f;
             try {
-                module.renderAt(client, card.x + (card.w - module.width * previewScale) / 2,
-                        card.y + 54 + (64 - module.height * previewScale) / 2, previewScale, true);
+                module.renderAt(client, preview.x + (preview.w - module.width * previewScale) / 2,
+                        preview.y + (preview.h - module.height * previewScale) / 2, previewScale, true);
             } finally { ink.opacity = alpha; }
-            toggleButton(TOGGLES[i], module.state.enabled, enabled[i].to(module.state.enabled ? 1 : 0), mx, my);
+            toggleButton(TOGGLES[slot], module.state.enabled, enabled[i].to(module.state.enabled ? 1 : 0), mx, my);
             ink.surface(gear.x, gear.y, gear.w, gear.h, Theme.CONTROL_RADIUS,
                     gear.contains(mx, my) ? Theme.SELECTED : Theme.CARD, gear.contains(mx, my) ? Theme.BORDER_HOVER : Theme.BORDER);
             ink.icon(6, gear.x + (gear.w - 15) / 2f, gear.y + (gear.h - 15) / 2f, 15, Theme.TEXT);
@@ -160,10 +167,10 @@ public final class ControlDeck {
         action("+", SCALE_PLUS, mx, my, false);
         ink.text("Opacidad", 226, 201, Theme.TEXT);
         ink.small(Math.round(active.state.opacity * 100) + "%", 331, 203, Theme.SECONDARY);
-        float fill = (active.state.opacity - 0.1f) / 0.75f * (OPACITY.w - 10);
+        float fill = active.state.opacity / 0.85f * (OPACITY.w - 10);
         float start = OPACITY.x + 5;
         ink.round(start, OPACITY.y + 9, OPACITY.w - 10, 4, 1.5f, Theme.INPUT);
-        ink.round(start, OPACITY.y + 9, Math.max(3, fill), 4, 1.5f, client.accent());
+        if (fill > 0) ink.round(start, OPACITY.y + 9, Math.max(3, fill), 4, 1.5f, client.accent());
         ink.round(start + fill - 4, OPACITY.y + 6.5f, 8, 9, 2, client.accent());
         ink.text("Fondo", 226, 231, Theme.TEXT);
         checkbox(BACKGROUND, backgroundSwitch.to(active.state.background ? 1 : 0));
@@ -258,7 +265,9 @@ public final class ControlDeck {
             GL11.glTranslatef(x, y, 0);
             ink.round(0, 2, EDITOR_WIDTH, EDITOR_HEIGHT, Theme.CARD_RADIUS, Theme.WINDOW_SHADOW);
             ink.surface(0, 0, EDITOR_WIDTH, EDITOR_HEIGHT, Theme.CARD_RADIUS, Theme.SIDEBAR, Theme.BORDER);
-            ink.label("SELECCIÓN", 12, 8); ink.text(active.title, 12, 24, 10, true, Theme.TEXT);
+            ink.label("SELECCIÓN", 12, 8);
+            float titleSize = Math.min(10, 10 * (EDITOR_MINUS.x - 18) / ink.width(active.title, 10, true));
+            ink.text(active.title, 12, 24, titleSize, true, Theme.TEXT);
             ink.label("ESCALA", 116, 7);
             action("-", EDITOR_MINUS, mouseX - x, mouseY - y, false);
             ink.center(Math.round(active.state.scale * 100) + "%", 119, 24, 37, 8, true, Theme.TEXT);
@@ -283,9 +292,13 @@ public final class ControlDeck {
             if (PERFORMANCE_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.PERFORMANCE); return; }
             if (nav.page() == Page.PERFORMANCE || nav.page() == Page.DIAGNOSTICS) { performance.click(nav, mx, my); return; }
             if (nav.page() == Page.MODULES) {
-                for (int i = 0; i < client.modules.all.length; i++) {
-                    if (TOGGLES[i].contains(mx, my)) { toggleModule(i); return; }
-                    if (CARDS[i].contains(mx, my)) { nav.settings(i); return; }
+                if (MODULE_PREVIOUS.contains(mx, my)) { nav.turnModules(-1); return; }
+                if (MODULE_NEXT.contains(mx, my)) { nav.turnModules(1); return; }
+                for (int slot = 0; slot < CARDS.length; slot++) {
+                    int i = nav.visibleModule(slot);
+                    if (i < 0) continue;
+                    if (TOGGLES[slot].contains(mx, my)) { toggleModule(i); return; }
+                    if (CARDS[slot].contains(mx, my)) { nav.settings(i); return; }
                 }
             } else if (nav.page() == Page.SETTINGS) {
                 HudModule active = client.modules.all[nav.selected()];

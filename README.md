@@ -14,7 +14,7 @@ La versión de CubiClient se mantiene en **0.0.1**. Los cambios de interfaz y la
 
 La organización toma como referencia la separación entre módulos y ajustes de clientes como Lunar, conservando el tema oscuro de CubicLauncher:
 
-- **Módulos:** tarjetas uniformes con activación independiente y botón de engranaje para configurar.
+- **Módulos:** cuatro tarjetas por página en una cuadrícula 2 × 2, con activación independiente, engranaje y vista previa lateral. Los seis widgets se distribuyen en dos páginas.
 - **Ajustes de módulo:** vista propia con botón «Volver», previsualización y filas para escala, opacidad, fondo, sombra y atajo.
 - **Apariencia:** tema, acento, «Mostrar CubiClient» y tecla para abrir/cerrar el menú.
 - **Rendimiento:** perfiles Equilibrado/Competitivo/Personalizado, ajustes gráficos, optimizaciones y diagnóstico exportable.
@@ -39,6 +39,10 @@ La apertura con Shift derecho se aplica al terminar el procesamiento de entrada 
 | **Menú CubiClient** | Pestañas Módulos/Apariencia/Rendimiento, tarjetas con activación y engranaje, ajustes individuales |
 | **FPS** | Indicador compacto de FPS sobre fondo translúcido opcional |
 | **Keystrokes + CPS** | Teclas con transición de color y CPS izquierdo/derecho bajo LMB/RMB, en una ventana móvil de un segundo; respeta los controles de Minecraft |
+| **Ping** | Latencia en ms, en un widget de 70 × 24 como FPS; `--` si todavía no está disponible |
+| **Armor Status** | Columna vertical de 64 × 88 con iconos reales, porcentaje de durabilidad y fondo transparente por defecto |
+| **Coordenadas** | X/Y/Z del bloque actual, también en posiciones negativas |
+| **Servidor** | Icono y dirección en una sola fila de 136 × 24; «Un jugador» en mundos locales |
 | **Editor del HUD** | Arrastrar, alinear con centro y bordes, ajuste fino, escala y restablecimiento |
 | **Apariencia** | Tema Cubic Oscuro, acento global, marca CubiClient opcional y tecla del menú |
 | **Configuración** | JSON versionado, escritura atómica y copia de recuperación si está dañado |
@@ -47,6 +51,10 @@ La apertura con Shift derecho se aplica al terminar el procesamiento de entrada 
 | **Integración** | Marca en el menú principal, título de ventana y pantalla real de Minecraft |
 
 La base conserva el motor de Minecraft 1.8.9 y añade descarte de partículas estándar fuera de cámara, además de reducir el trabajo propio del HUD. Los perfiles permiten ajustar el coste visual a distintos equipos. Consulta [rendimiento y perfiles](docs/PERFORMANCE.md) para conocer cada ajuste, restaurar valores anteriores y comparar capturas. Las ganancias de FPS requieren mediciones A/B; todavía no hay una comparación validada con Lunar.
+
+Los módulos nuevos se activan inicialmente y comparten los controles de escala, posición, fondo, sombra, opacidad y atajo. En Armor Status, verde indica más del 50%, amarillo entre 21% y 50% y rojo hasta el 20%; `--` identifica una ranura vacía y `N/A` un objeto sin desgaste, como equipo irrompible o una calabaza. Las direcciones demasiado largas se abrevian con `...` para respetar los límites del widget. El ping usa el valor recibido de Minecraft, sin enviar sondeos adicionales.
+
+Armor Status muestra casco, pechera, pantalones y botas de arriba abajo, con la durabilidad a su derecha. En sus ajustes, **Opacidad → 0%** deja el fondo completamente transparente; puedes subirla para mostrarlo. Servidor usa la misma imagen guardada que la lista de servidores de Minecraft y muestra un icono genérico cuando no está disponible. Se carga al cambiar los datos, no en cada fotograma.
 
 ## Requisitos
 
@@ -100,6 +108,7 @@ El proyecto también conserva `tools/install.py` para el formato `versions/<id>/
 | --- | --- |
 | Abrir/cerrar panel | **Shift derecho**, configurable en Apariencia → Tecla del menú |
 | Abrir ajustes de módulo | Engranaje o cuerpo de la tarjeta |
+| Cambiar página de módulos | Botones `<` / `>` junto al indicador de página |
 | Activar/desactivar | Botón «Activado/Desactivado» de la tarjeta o de sus ajustes |
 | Asignar atajo | Ajustes del módulo → Atajo |
 | Quitar atajo | Backspace o Supr durante la captura |
@@ -109,7 +118,7 @@ El proyecto también conserva `tools/install.py` para el formato `versions/<id>/
 | Desplazar selección | Flechas: 4 píxeles; con Shift: 1 píxel |
 | Cambiar selección | Tab en el editor |
 | Cambiar escala | `+` / `-` en el editor o botones del panel, entre 75% y 200% |
-| Cambiar opacidad | Deslizador del módulo seleccionado, entre 10% y 85% |
+| Cambiar opacidad | Deslizador del módulo seleccionado, entre 0% (transparente) y 85% |
 | Cambiar fondo/sombra | Casillas del módulo seleccionado |
 | Cambiar acento | Apariencia → Color de acento |
 | Mostrar/ocultar marca | Apariencia → Mostrar CubiClient |
@@ -132,6 +141,8 @@ cubiclient/config.json
 Cada módulo conserva `enabled`, `key`, `x`, `y`, `scale`, `background`, `shadow` y `opacity`. `accent` y `watermark` son ajustes globales. Las posiciones están normalizadas dentro del espacio disponible de la pantalla. Las configuraciones del diseño inicial se migran una vez para conservar aproximadamente la esquina superior izquierda de cada widget al reducir sus dimensiones; los atajos y las escalas se conservan. «Restablecer» aplica la distribución compacta nueva.
 
 Los CPS forman parte de Keystrokes y comparten su activación, posición, escala y estilo. El HUD conserva las dimensiones anteriores del teclado. Las opciones guardadas del antiguo módulo `clicks` se conservan como datos heredados, pero ya no generan otro widget ni un atajo activo.
+
+Ping, Armor Status, Coordenadas y Servidor usan los IDs `ping`, `armor`, `coordinates` y `server`. Al actualizar, solo se colocan los módulos que todavía no tenían una entrada guardada; FPS, Keystrokes y cualquier módulo ya configurado conservan sus posiciones y atajos. La distribución inicial coloca FPS/Keystrokes/Ping a la izquierda y Servidor/Armor Status/Coordenadas a la derecha.
 
 La actualización al tema Cubic Oscuro registra `themeRevision` y selecciona el acento blanco una sola vez. Conserva las posiciones, las escalas, la opacidad, los atajos y el estado de los módulos. Si después eliges otro acento, se conserva al reiniciar.
 
@@ -165,6 +176,8 @@ La entrega de rendimiento pasó **235 comprobaciones Java**, verificación JVM d
 
 La integración posterior de CPS en Keystrokes pasó **236 comprobaciones Java**, enlace JVM y las **7 pruebas Python**; no se repitió la prueba gráfica para este ajuste.
 
+La primera entrega de los cuatro módulos básicos y la paginación pasó **301 comprobaciones Java**, enlace JVM del jar final y **7 pruebas Python**. El ajuste posterior de tamaños, armadura vertical/transparente e icono de servidor se compiló con `python3 tools/build.py --replacement`, sin ejecutar pruebas por petición del usuario. Las comprobaciones anteriores no cubren este ajuste; la revisión gráfica sigue pendiente.
+
 Consulta [verificación y rendimiento](docs/VERIFICATION.md) para el alcance real de las comprobaciones y [arquitectura](docs/ARCHITECTURE.md) para ampliar el cliente.
 
 ## Estructura
@@ -175,7 +188,7 @@ src/main/java/dev/cubi/
   bridge/       Adaptador cacheado de Minecraft 1.8.9 e instanciación de GuiScreen
   core/         Ciclo de vida, puntos de entrada, métricas y ventana de CPS
   config/       Persistencia y validación
-  module/       Contrato de HUD, registro, FPS y Keystrokes con CPS integrados
+  module/       Registro, FPS, Keystrokes/CPS, Ping, Armor Status, Coordenadas y Servidor
   performance/  Perfiles, caché de resolución, visibilidad y captura de fotogramas
   ui/           Paleta, primitivas gráficas, Control Deck y editor
 src/build/java/ Generación de GuiScreen, atlas tipográfico/gráfico y hooks al compilar

@@ -40,6 +40,7 @@ public final class SelfTest {
         atlasAssets();
         assertions += DeckTest.run();
         assertions += PerformanceTest.run();
+        assertions += HudTest.run();
         placement();
         menuActivation();
         menuDispatchContract();
@@ -168,6 +169,13 @@ public final class SelfTest {
         check(atlas != null && atlas.getWidth() == 2048 && atlas.getHeight() == 1024, "Atlas matches runtime texture coordinates");
         check((atlas.getRGB(416, 992) >>> 24) == 0 && (atlas.getRGB(416, 961) >>> 24) > 0,
                 "Border mask has a transparent center and cannot fill a translucent HUD widget");
+        for (int icon = 7; icon <= 14; icon++) {
+            int pixels = 0;
+            for (int y = 960; y < 1024; y++) for (int x = (icon + 1) * 64; x < (icon + 2) * 64; x++) {
+                if ((atlas.getRGB(x, y) >>> 24) != 0) pixels++;
+            }
+            check(pixels > 100 && pixels < 3000, "New HUD icon has bounded visible strokes: " + icon);
+        }
         try (DataInputStream metrics = new DataInputStream(SelfTest.class.getResourceAsStream("/assets/cubi/ui/atlas.bin"))) {
             check(metrics.readInt() == 0x43554249, "Font metrics header matches the renderer");
             boolean valid = true;
@@ -308,6 +316,19 @@ public final class SelfTest {
         method(mc, "A", "()Lave;"); method(mc, "a", "(Laxu;)V"); method(mc, "ai", "()I");
         field(mc, "k", "Lavn;"); field(mc, "t", "Lavh;"); field(mc, "v", "Ljava/io/File;");
         field(mc, "m", "Laxu;"); field(mc, "f", "Lbdb;");
+        field(mc, "h", "Lbew;"); method(mc, "u", "()Lbcy;"); method(mc, "D", "()Lbde;");
+        method(mc, "E", "()Z"); method(mc, "ag", "()Lbjh;");
+        method(node(vanilla, "pk"), "aK", "()Ljava/util/UUID;");
+        method(node(vanilla, "bcy"), "a", "(Ljava/util/UUID;)Lbdc;");
+        method(node(vanilla, "bdc"), "c", "()I"); field(node(vanilla, "bde"), "b", "Ljava/lang/String;");
+        method(node(vanilla, "bde"), "c", "()Ljava/lang/String;");
+        field(node(vanilla, "wn"), "bi", "Lwm;"); field(node(vanilla, "wm"), "b", "[Lzx;");
+        method(node(vanilla, "zx"), "h", "()I"); method(node(vanilla, "zx"), "j", "()I");
+        method(node(vanilla, "zx"), "e", "()Z"); method(node(vanilla, "zx"), "<init>", "(Lzw;)V");
+        method(node(vanilla, "zw"), "b", "(I)Lzw;");
+        method(node(vanilla, "bjh"), "b", "(Lzx;II)V");
+        method(node(vanilla, "avc"), "c", "()V"); method(node(vanilla, "avc"), "a", "()V");
+        method(node(vanilla, "bfl"), "a", "(Z)V");
         field(mc, "d", "I"); field(mc, "e", "I"); field(mc, "g", "Lbfr;"); method(mc, "d", "()Z");
         method(node(vanilla, "bfr"), "a", "()V");
         ClassNode settings = node(vanilla, "avh");
@@ -327,8 +348,9 @@ public final class SelfTest {
         method(node(vanilla, "avp"), "a", "(IIIII)V");
         method(node(vanilla, "bfl"), "c", "(FFFF)V");
         method(node(vanilla, "bfl"), "i", "(I)V");
+        method(node(vanilla, "bfl"), "h", "(I)V");
         method(node(vanilla, "bfl"), "a", "(IIII)V");
-        for (String name : new String[] {"w", "l", "k", "d", "c"}) method(node(vanilla, "bfl"), name, "()V");
+        for (String name : new String[] {"w", "l", "k", "d", "c", "j", "i", "C"}) method(node(vanilla, "bfl"), name, "()V");
         ClassNode resolution = node(vanilla, "avr");
         method(resolution, "<init>", "(Lave;)V"); method(resolution, "a", "()I"); method(resolution, "b", "()I");
         byte[] screen = ScreenGenerator.bytecode();

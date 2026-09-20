@@ -83,7 +83,33 @@ public final class UiAssets {
             if (i == 0) gear.moveTo(x, y); else gear.lineTo(x, y);
         }
         gear.closePath(); g.draw(gear); g.drawOval(23, 23, 18, 18);
+        g.translate(64, 0); // 7: latency
+        for (int i = 0; i < 4; i++) g.fillRoundRect(8 + i * 13, 44 - i * 11, 8, 12 + i * 11, 3, 3);
+        g.translate(64, 0); // 8: armor
+        armorIcon(g, 1);
+        g.translate(64, 0); // 9: coordinates
+        g.drawOval(14, 14, 36, 36); g.drawOval(27, 27, 10, 10);
+        g.drawLine(32, 3, 32, 20); g.drawLine(32, 44, 32, 61);
+        g.drawLine(3, 32, 20, 32); g.drawLine(44, 32, 61, 32);
+        g.translate(64, 0); // 10: server
+        for (int i = 0; i < 3; i++) {
+            g.drawRoundRect(7, 5 + i * 19, 50, 15, 4, 4);
+            g.fillOval(13, 10 + i * 19, 5, 5); g.drawLine(27, 13 + i * 19, 49, 13 + i * 19);
+        }
+        for (int i = 0; i < 4; i++) { g.translate(64, 0); armorIcon(g, i); } // 11..14: empty equipment slots
         g.dispose();
         ImageIO.write(image, "png", output.resolve("atlas.png").toFile());
+    }
+    private static void armorIcon(Graphics2D g, int slot) {
+        Path2D shape = new Path2D.Float();
+        int[][] points;
+        if (slot == 0) points = new int[][] {{10, 49}, {10, 18}, {20, 8}, {44, 8}, {54, 18}, {54, 49}, {42, 49}, {42, 31}, {22, 31}, {22, 49}};
+        else if (slot == 1) points = new int[][] {{9, 7}, {23, 7}, {23, 18}, {41, 18}, {41, 7}, {55, 7}, {59, 29}, {47, 34}, {47, 57}, {17, 57}, {17, 34}, {5, 29}};
+        else if (slot == 2) points = new int[][] {{13, 7}, {51, 7}, {51, 57}, {36, 57}, {36, 30}, {28, 30}, {28, 57}, {13, 57}};
+        else points = new int[][] {{13, 8}, {28, 8}, {28, 56}, {4, 56}, {4, 41}, {13, 41}};
+        shape.moveTo(points[0][0], points[0][1]);
+        for (int i = 1; i < points.length; i++) shape.lineTo(points[i][0], points[i][1]);
+        shape.closePath(); g.draw(shape);
+        if (slot == 3) { g.translate(32, 0); g.draw(shape); g.translate(-32, 0); }
     }
 }

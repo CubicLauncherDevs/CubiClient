@@ -1,6 +1,7 @@
 package dev.cubi.module;
 
 import dev.cubi.core.CubiClient;
+import dev.cubi.config.ClientConfig;
 import dev.cubi.ui.Ink;
 import dev.cubi.ui.Motion;
 import dev.cubi.ui.Theme;
@@ -10,7 +11,7 @@ public final class KeysModule extends HudModule {
     private final String[] labels = {"W", "A", "S", "D", "SPACE"};
     private int ticks;
     private final Motion[] presses = {new Motion(), new Motion(), new Motion(), new Motion(), new Motion(), new Motion(), new Motion()};
-    public KeysModule(CubiClient client) { super(client, "keys", "Keystrokes", "Teclas, ratón y CPS", "02", 82, 94); }
+    public KeysModule(ClientConfig config) { super(config, "keys", "Keystrokes", "Teclas, ratón y CPS", "02", 82, 94); }
 
     @Override
     public void tick(CubiClient client) throws Throwable {
@@ -39,7 +40,8 @@ public final class KeysModule extends HudModule {
     private void key(CubiClient client, Ink ink, int index, String label, int x, int y, int width, int height, boolean pressed, String cps) throws Throwable {
         float amount = presses[index].to(pressed ? 1 : 0);
         int idle = Ink.alpha(Theme.BACKGROUND, state.background ? state.opacity : 0);
-        if (state.shadow && state.background) ink.round(x, y + 1, width, height, Theme.HUD_RADIUS, Theme.HUD_SHADOW);
+        if (state.shadow && state.background && state.opacity > 0) ink.round(x, y + 1, width, height, Theme.HUD_RADIUS,
+                Ink.alpha(Theme.HUD_SHADOW, (Theme.HUD_SHADOW >>> 24) / 255f * state.opacity / 0.48f));
         ink.round(x, y, width, height, Theme.HUD_RADIUS, Ink.mix(idle, client.accent(), amount));
         int idleBorder = Ink.alpha(Theme.BORDER_HOVER, state.background ? state.opacity : 0);
         ink.border(x, y, width, height, Theme.HUD_RADIUS, Ink.mix(idleBorder, client.accent(), amount));

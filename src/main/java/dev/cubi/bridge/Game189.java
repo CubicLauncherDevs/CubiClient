@@ -3,6 +3,9 @@ package dev.cubi.bridge;
 import dev.cubi.performance.ParticleVisibility;
 import dev.cubi.performance.ResolutionCache;
 import dev.cubi.performance.VideoSettings;
+import dev.cubi.module.HudValues;
+import java.util.UUID;
+import org.lwjgl.opengl.GL11;
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -24,13 +27,20 @@ public final class Game189 {
     private final Object[] movement = new Object[5];
     private final MethodHandle keyCode, drawText, textWidth, rectangle, color;
     private final MethodHandle displayScreen, getFps, scaledWidth, scaledHeight;
-    private final MethodHandle bindTexture, enableTexture, enableBlend, disableBlend, enableAlpha, disableAlpha, blendFunction;
+    private final MethodHandle bindTexture, deleteTexture, enableTexture, enableBlend, disableBlend, enableAlpha, disableAlpha, blendFunction;
     private final Constructor<?> scaledResolution;
     private final Field displayWidth, displayHeight, guiScale, renderGlobal;
     private final Field distance, frameLimit, clouds, particles, fancy, ao, vsync, vbo, shadows;
     private final MethodHandle unicode, reloadRenderers, saveOptions;
     private final ResolutionCache resolutionCache = new ResolutionCache();
     private ParticleAccess particleAccess;
+    private final MethodHandle player, posX, posY, posZ, playerId, connection, playerInfo, responseTime;
+    private final MethodHandle currentServer, singleplayer, serverAddress, serverIcon, inventory, armor;
+    private final MethodHandle itemDamage, itemMaximum, itemDamageable, itemRenderer, renderItem;
+    private final MethodHandle guiLighting, disableLighting, enableDepth, disableDepth, depthMask, disableRescale;
+    private final MethodHandle itemById;
+    private final Constructor<?> itemStack;
+    private final Object[] previewArmor = new Object[4];
     public final File directory;
     public int width = 854, height = 480;
 
@@ -52,6 +62,7 @@ public final class Game189 {
         rectangle = handle(type("avp"), "a", int.class, int.class, int.class, int.class, int.class);
         color = handle(type("bfl"), "c", float.class, float.class, float.class, float.class);
         bindTexture = handle(type("bfl"), "i", int.class);
+        deleteTexture = handle(type("bfl"), "h", int.class);
         enableTexture = handle(type("bfl"), "w");
         enableBlend = handle(type("bfl"), "l");
         disableBlend = handle(type("bfl"), "k");
@@ -72,6 +83,27 @@ public final class Game189 {
         distance = field(options, "c"); frameLimit = field(options, "g"); clouds = field(options, "h");
         particles = field(options, "aM"); fancy = field(options, "i"); ao = field(options, "j");
         vsync = field(options, "t"); vbo = field(options, "u"); shadows = field(options, "W");
+        player = getter(mc, "h", Object.class);
+        posX = getter(type("pk"), "s", double.class); posY = getter(type("pk"), "t", double.class);
+        posZ = getter(type("pk"), "u", double.class); playerId = virtual(type("pk"), "aK", UUID.class);
+        connection = virtual(mc, "u", Object.class);
+        playerInfo = virtual(type("bcy"), "a", Object.class, UUID.class);
+        responseTime = virtual(type("bdc"), "c", int.class);
+        currentServer = virtual(mc, "D", Object.class); singleplayer = virtual(mc, "E", boolean.class);
+        serverAddress = getter(type("bde"), "b", String.class);
+        serverIcon = virtual(type("bde"), "c", String.class);
+        inventory = getter(type("wn"), "bi", Object.class); armor = getter(type("wm"), "b", Object[].class);
+        Class<?> stack = type("zx");
+        itemDamage = virtual(stack, "h", int.class); itemMaximum = virtual(stack, "j", int.class);
+        itemDamageable = virtual(stack, "e", boolean.class);
+        itemRenderer = virtual(mc, "ag", Object.class);
+        renderItem = handle(type("bjh"), "b", stack, int.class, int.class)
+                .asType(MethodType.methodType(void.class, Object.class, Object.class, int.class, int.class));
+        guiLighting = handle(type("avc"), "c"); disableLighting = handle(type("avc"), "a");
+        enableDepth = handle(type("bfl"), "j"); disableDepth = handle(type("bfl"), "i");
+        depthMask = handle(type("bfl"), "a", boolean.class); disableRescale = handle(type("bfl"), "C");
+        itemById = handle(type("zw"), "b", int.class).asType(MethodType.methodType(Object.class, int.class));
+        itemStack = stack.getConstructor(type("zw"));
         resize();
     }
 
@@ -149,6 +181,62 @@ public final class Game189 {
 
     public Object worldIdentity() throws IllegalAccessException { return world.get(minecraft); }
 
+    public Object player() throws Throwable { return inWorld() ? (Object) player.invokeExact(minecraft) : null; }
+    public int ping() throws Throwable {
+        Object p = player();
+        if (p == null) return -1;
+        Object net = (Object) connection.invokeExact(minecraft);
+        if (net == null) return -1;
+        Object info = (Object) playerInfo.invokeExact(net, (UUID) playerId.invokeExact(p));
+        return info == null ? -1 : (int) responseTime.invokeExact(info);
+    }
+    public int blockX(Object p) throws Throwable { return HudValues.block((double) posX.invokeExact(p)); }
+    public int blockY(Object p) throws Throwable { return HudValues.block((double) posY.invokeExact(p)); }
+    public int blockZ(Object p) throws Throwable { return HudValues.block((double) posZ.invokeExact(p)); }
+    public String server() throws Throwable {
+        if (!inWorld()) return HudValues.server(false, false, null);
+        boolean local = (boolean) singleplayer.invokeExact(minecraft);
+        Object data = (Object) currentServer.invokeExact(minecraft);
+        return HudValues.server(true, local, data == null ? null : (String) serverAddress.invokeExact(data));
+    }
+    /** Same cached favicon shown by the vanilla server list, without extra network requests. */
+    public String serverIcon() throws Throwable {
+        if (!inWorld() || (boolean) singleplayer.invokeExact(minecraft)) return null;
+        Object data = (Object) currentServer.invokeExact(minecraft);
+        return data == null ? null : (String) serverIcon.invokeExact(data);
+    }
+    /** Vanilla inventory order is boots to helmet; the HUD displays helmet to boots. */
+    public void armor(Object[] target) throws Throwable {
+        Object p = player();
+        Object inv = p == null ? null : (Object) inventory.invokeExact(p);
+        Object[] equipped = inv == null ? null : (Object[]) armor.invokeExact(inv);
+        for (int i = 0; i < 4; i++) target[i] = equipped == null ? null : equipped[3 - i];
+    }
+    public int durability(Object stack) throws Throwable {
+        if (stack == null) return HudValues.EMPTY;
+        return HudValues.durability((int) itemMaximum.invokeExact(stack), (int) itemDamage.invokeExact(stack),
+                (boolean) itemDamageable.invokeExact(stack));
+    }
+    public Object previewArmor(int slot) throws Throwable {
+        if (previewArmor[slot] == null) previewArmor[slot] = itemStack.newInstance((Object) itemById.invokeExact(310 + slot));
+        return previewArmor[slot];
+    }
+    /** Called only after flushing the UI atlas. Restore depth via the vanilla state cache. */
+    public void item(Object stack, int x, int y) throws Throwable {
+        if (stack == null) return;
+        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST), writeDepth = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        try {
+            enableTexture.invokeExact(); enableDepth.invokeExact(); depthMask.invokeExact(true);
+            guiLighting.invokeExact();
+            renderItem.invokeExact((Object) itemRenderer.invokeExact(minecraft), stack, x, y);
+        } finally {
+            disableLighting.invokeExact(); disableRescale.invokeExact();
+            if (depth) enableDepth.invokeExact(); else disableDepth.invokeExact();
+            depthMask.invokeExact(writeDepth);
+            finishInk();
+        }
+    }
+
     public void beginParticles() throws Throwable {
         if (particleAccess == null) particleAccess = new ParticleAccess();
         particleAccess.planes = null;
@@ -224,6 +312,7 @@ public final class Game189 {
     }
     public void white() throws Throwable { color.invokeExact(1.0f, 1.0f, 1.0f, 1.0f); }
     public void bindTexture(int texture) throws Throwable { bindTexture.invokeExact(texture); }
+    public void deleteTexture(int texture) throws Throwable { deleteTexture.invokeExact(texture); }
     public void textureInk(int texture, int argb) throws Throwable {
         enableTexture.invokeExact(); enableBlend.invokeExact(); disableAlpha.invokeExact();
         blendFunction.invokeExact(770, 771, 1, 0);

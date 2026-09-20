@@ -16,6 +16,7 @@ public final class Theme {
     public static final int OVERLAY = 0xB3000000, EDITOR_OVERLAY = 0x25000000;
     public static final int HUD_SHADOW = 0x26000000, TEXT_SHADOW = 0x66000000;
     public static final int WINDOW_SHADOW = 0x66000000;
+    public static final int SUCCESS = 0xFF9BD4AA, WARNING = 0xFFEAC47C, DANGER = 0xFFE58F8F;
     public static final float WINDOW_RADIUS = 12, CARD_RADIUS = 8, CONTROL_RADIUS = 4, HUD_RADIUS = 3;
     public static final float STROKE = 0.65f;
     private Theme() { }

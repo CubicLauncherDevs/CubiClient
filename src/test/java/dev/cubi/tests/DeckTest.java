@@ -1,6 +1,7 @@
 package dev.cubi.tests;
 
 import dev.cubi.core.ClientIdentity;
+import dev.cubi.module.ModuleRegistry;
 import dev.cubi.ui.DeckLayout;
 import dev.cubi.ui.DeckLayout.Rect;
 import dev.cubi.ui.DeckState;
@@ -26,7 +27,7 @@ public final class DeckTest {
     }
 
     private static void navigation() {
-        DeckState nav = new DeckState(DeckLayout.CARDS.length);
+        DeckState nav = new DeckState(ModuleRegistry.COUNT);
         check(nav.page() == Page.MODULES && !nav.capturing(), "Menu opens on an uncluttered module browser");
         nav.settings(1);
         check(nav.page() == Page.SETTINGS && nav.selected() == 1, "Settings target the requested module");
@@ -43,7 +44,7 @@ public final class DeckTest {
         nav.settings(0); nav.edit(); nav.nextModule();
         check(nav.selected() == 1, "Tab selects the next widget while editing");
         check(!nav.back() && nav.page() == Page.SETTINGS && nav.selected() == 1, "Editor returns to settings for the selected widget");
-        nav.nextModule();
+        nav.select(ModuleRegistry.COUNT - 1); nav.nextModule();
         check(nav.selected() == 0, "Widget selection wraps without indexing past the registry");
         nav.captureModule(); nav.tab(Page.APPEARANCE);
         check(!nav.capturing() && nav.page() == Page.APPEARANCE, "Changing root tabs clears old binding focus");
@@ -52,16 +53,36 @@ public final class DeckTest {
         try { nav.captureModule(); } catch (IllegalStateException expected) { guarded = true; }
         check(guarded, "A hidden module-binding control cannot capture keys from appearance");
         guarded = false;
-        try { nav.select(2); } catch (IllegalArgumentException expected) { guarded = true; }
+        try { nav.select(ModuleRegistry.COUNT); } catch (IllegalArgumentException expected) { guarded = true; }
         check(guarded && nav.selected() == 0, "Invalid selections cannot corrupt navigation");
         nav.tab(Page.PERFORMANCE); nav.diagnostics(); nav.edit();
         check(!nav.back() && nav.page() == Page.DIAGNOSTICS, "Editor returns to diagnostics");
         check(!nav.back() && nav.page() == Page.PERFORMANCE && nav.back(), "Diagnostics returns to performance before closing");
+        nav.tab(Page.MODULES);
+        check(nav.modulePages() == 3 && nav.visibleModule(0) == 0 && nav.visibleModule(1) == 1, "Browser starts with FPS and Keystrokes");
+        nav.turnModules(-1);
+        check(nav.modulePage() == 0, "Previous page clamps at the beginning");
+        nav.turnModules(1);
+        check(nav.visibleModule(0) == 2 && nav.visibleModule(1) == 3, "Second page targets ping and armor, not the first two widgets");
+        nav.settings(nav.visibleModule(1)); nav.captureModule();
+        check(nav.binding() == 3, "Binding belongs to armor on the second browser page");
+        nav.turnModules(1);
+        check(nav.modulePage() == 1, "Hidden pagination cannot change binding focus");
+        nav.back(); nav.back();
+        check(nav.page() == Page.MODULES && nav.modulePage() == 1, "Back from settings preserves browser page");
+        nav.turnModules(1); nav.turnModules(1);
+        check(nav.modulePage() == 2 && nav.visibleModule(0) == 4 && nav.visibleModule(1) == 5, "Last page targets coordinates and server and clamps");
+        nav.edit(); nav.select(5); nav.nextModule(); nav.back();
+        check(nav.modulePage() == 0 && nav.selected() == 0, "Editor wrap reveals the selected widget's page");
+        DeckState odd = new DeckState(5); odd.turnModules(2);
+        check(odd.visibleModule(0) == 4 && odd.visibleModule(1) == -1 && odd.visibleModule(2) == -1,
+                "Partial pages expose no nonexistent module targets");
     }
 
     private static void geometry() {
         List<Rect> header = Arrays.asList(DeckLayout.EDIT, DeckLayout.CLOSE, DeckLayout.MODULES_TAB, DeckLayout.APPEARANCE_TAB, DeckLayout.PERFORMANCE_TAB);
         List<Rect> modules = new ArrayList<Rect>(header);
+        modules.add(DeckLayout.MODULE_PREVIOUS); modules.add(DeckLayout.MODULE_NEXT);
         for (int i = 0; i < DeckLayout.CARDS.length; i++) {
             Rect card = DeckLayout.CARDS[i], toggle = DeckLayout.TOGGLES[i], settings = DeckLayout.SETTINGS[i];
             check(contains(card, toggle) && contains(card, settings) && !toggle.intersects(settings), "Activation and settings are distinct targets in card " + i);

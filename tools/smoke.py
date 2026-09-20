@@ -130,7 +130,7 @@ def main():
     for line in text.splitlines():
         if "[Cubi]" in line or "PASS /" in line:
             print(line)
-    markers = ("PASS / OpenGL:", "PASS / WORLD:", "PASS / KEYBOARD:", "PASS / PERFORMANCE:", "PASS / CAPTURE:")
+    markers = ("PASS / OpenGL:", "PASS / WORLD:", "PASS / KEYBOARD:", "PASS / PERFORMANCE:", "PASS / CAPTURE:", "PASS / BASIC HUD:")
     if returncode or any(marker not in text for marker in markers):
         raise RuntimeError("Smoke test falló. Consulta " + str(log))
     print("Capturas: " + str(game_dir / "screenshots"))

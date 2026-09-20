@@ -5,6 +5,7 @@ import dev.cubi.core.ClientIdentity;
 import dev.cubi.core.Hooks;
 import dev.cubi.bridge.Game189;
 import dev.cubi.config.ClientConfig;
+import dev.cubi.module.HudValues;
 import dev.cubi.ui.ControlDeck;
 import dev.cubi.ui.DeckLayout;
 import dev.cubi.ui.DeckState;
@@ -140,6 +141,7 @@ public final class SmokeTest {
                 ClientConfig persisted = ClientConfig.load(client.game.directory.toPath().resolve("cubiclient/config.json"));
                 require(persisted.accent == 1 && persisted.state("frames").opacity > 0.65f, "Visual settings persist");
                 click(DeckLayout.ACCENTS[0]);
+                moduleBrowserRegression();
                 performanceRegression();
                 client.modules.all[0].state.opacity = 0.48f;
                 client.config.changed();
@@ -202,6 +204,7 @@ public final class SmokeTest {
                 require(!failed.getBoolean(null), "No HUD errors in world");
                 require(!client.performanceLabel.contains("--"), "HUD was rendered and measured");
                 screenshot("03-in-world.png");
+                basicHudRegression();
                 particleVisibilityRegression();
                 System.out.println("PASS / WORLD: vanilla singleplayer + HUD. Last elapsed HUD sample: " + client.performanceLabel);
                 client.open();
@@ -272,6 +275,72 @@ public final class SmokeTest {
                 minecraft.getClass().getDeclaredMethod("m").invoke(minecraft);
             }
         });
+    }
+
+    private static void moduleBrowserRegression() throws Throwable {
+        click(DeckLayout.MODULES_TAB);
+        require(client.modules.all.length == 6, "Six modules available in the live registry");
+        for (int page = 1; page <= 2; page++) {
+            click(DeckLayout.MODULE_NEXT);
+            ControlDeck.draw(0, 0, 0);
+            for (int slot = 0; slot < 2; slot++) {
+                int index = page * 2 + slot;
+                boolean enabled = client.modules.all[index].state.enabled;
+                click(DeckLayout.TOGGLES[slot]);
+                require(client.modules.all[index].state.enabled != enabled, "Pagination toggles the intended module " + index);
+                click(DeckLayout.TOGGLES[slot]);
+                click(DeckLayout.SETTINGS[slot]);
+                requirePage(DeckState.Page.SETTINGS, "New module settings open");
+                ControlDeck.draw(0, 0, 0);
+                float scale = client.modules.all[index].state.scale;
+                click(DeckLayout.SCALE_PLUS);
+                require(client.modules.all[index].state.scale > scale, "Settings apply to the intended module " + index);
+                click(DeckLayout.SCALE_MINUS);
+                click(DeckLayout.BACK);
+            }
+        }
+        click(DeckLayout.MODULE_PREVIOUS); click(DeckLayout.MODULE_PREVIOUS);
+        // Restore selection as well as the visible page for the existing editor/keyboard checks.
+        click(DeckLayout.SETTINGS[0]); click(DeckLayout.BACK);
+        require(org.lwjgl.opengl.GL11.glGetError() == org.lwjgl.opengl.GL11.GL_NO_ERROR, "New pages and item previews leave no GL errors");
+    }
+
+    private static void basicHudRegression() throws Throwable {
+        require(client.game.server().equals("Un jugador"), "Local world has a local server label");
+        require(client.game.player() != null && client.game.ping() >= 0, "Local player has a tab-list latency entry");
+        // Manipulate only the isolated smoke world's inventory, then restore it even on failure.
+        Object p = client.game.player();
+        Object inventory = Game189.type("wn").getDeclaredField("bi").get(p);
+        Object[] equipment = (Object[]) Game189.type("wm").getDeclaredField("b").get(inventory);
+        Object[] saved = equipment.clone(), displayed = new Object[4];
+        boolean batching = client.config.performance.hudBatching;
+        Class<?> stackType = Game189.type("zx");
+        try {
+            for (int i = 0; i < 4; i++) equipment[3 - i] = stackType.getDeclaredMethod("k").invoke(client.game.previewArmor(i));
+            stackType.getDeclaredMethod("b", int.class).invoke(equipment[3], 181); // diamond helmet: 363 maximum
+            client.game.armor(displayed);
+            require(displayed[0] == equipment[3] && displayed[3] == equipment[0], "Armor order is helmet through boots");
+            require(client.game.durability(displayed[0]) == 50 && client.game.durability(displayed[3]) == 100,
+                    "Actual ItemStack handles read current and maximum damage");
+            equipment[1] = null;
+            client.game.armor(displayed);
+            require(displayed[2] == null && client.game.durability(displayed[2]) == HudValues.EMPTY, "Removing equipped armor clears its slot");
+            client.modules.all[3].tick(client);
+            boolean depth = org.lwjgl.opengl.GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_DEPTH_TEST);
+            boolean write = org.lwjgl.opengl.GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_DEPTH_WRITEMASK);
+            for (boolean batch : new boolean[] {false, true}) {
+                client.config.performance.hudBatching = batch;
+                client.modules.all[3].renderAt(client, 12, 12, 1, false);
+                require(depth == org.lwjgl.opengl.GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_DEPTH_TEST)
+                        && write == org.lwjgl.opengl.GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_DEPTH_WRITEMASK), "Armor restores depth state");
+                require(org.lwjgl.opengl.GL11.glGetError() == org.lwjgl.opengl.GL11.GL_NO_ERROR, "Mixed item/atlas rendering works with batching=" + batch);
+            }
+            System.out.println("PASS / BASIC HUD: pagination, live local ping/server, armor slots, durability and item rendering.");
+        } finally {
+            System.arraycopy(saved, 0, equipment, 0, 4);
+            client.config.performance.hudBatching = batching;
+            client.modules.all[3].tick(client);
+        }
     }
 
     private static void performanceRegression() throws Throwable {
