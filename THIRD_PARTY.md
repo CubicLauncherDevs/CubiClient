@@ -1,6 +1,6 @@
 # Dependencias y referencias
 
-La biblioteca `dist/cubiclient-0.2.1.jar` contiene el código propio del cliente, la pantalla y los assets gráficos generados. El archivo **`dist/replacement/minecraft.jar`** se construye localmente a partir del cliente de Mojang e incluye las clases y recursos de Minecraft con los hooks de Cubi aplicados. Los artefactos descargados y generados están excluidos del repositorio mediante `.gitignore`.
+La biblioteca `dist/cubiclient-{version}.jar` contiene el código propio del cliente, la pantalla y los assets gráficos generados. El archivo **`dist/replacement/minecraft.jar`** se construye localmente a partir del cliente de Mojang e incluye las clases y recursos de Minecraft con los hooks de Cubi aplicados. Los artefactos descargados y generados están excluidos del repositorio mediante `.gitignore`.
 
 | Dependencia | Versión | Uso / fuente |
 | --- | --- | --- |
