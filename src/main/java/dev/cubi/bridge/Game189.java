@@ -1,5 +1,8 @@
 package dev.cubi.bridge;
 
+import dev.cubi.performance.ParticleVisibility;
+import dev.cubi.performance.ResolutionCache;
+import dev.cubi.performance.VideoSettings;
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -9,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.Display;
 
 /** All obfuscated access lives here. Method handles are resolved once, never per frame. */
 public final class Game189 {
@@ -22,6 +26,11 @@ public final class Game189 {
     private final MethodHandle displayScreen, getFps, scaledWidth, scaledHeight;
     private final MethodHandle bindTexture, enableTexture, enableBlend, disableBlend, enableAlpha, disableAlpha, blendFunction;
     private final Constructor<?> scaledResolution;
+    private final Field displayWidth, displayHeight, guiScale, renderGlobal;
+    private final Field distance, frameLimit, clouds, particles, fancy, ao, vsync, vbo, shadows;
+    private final MethodHandle unicode, reloadRenderers, saveOptions;
+    private final ResolutionCache resolutionCache = new ResolutionCache();
+    private ParticleAccess particleAccess;
     public final File directory;
     public int width = 854, height = 480;
 
@@ -54,6 +63,15 @@ public final class Game189 {
         scaledResolution = resolution.getConstructor(mc);
         scaledWidth = virtual(resolution, "a", int.class);
         scaledHeight = virtual(resolution, "b", int.class);
+        displayWidth = field(mc, "d"); displayHeight = field(mc, "e");
+        guiScale = field(type("avh"), "aL"); unicode = virtual(mc, "d", boolean.class);
+        renderGlobal = field(mc, "g");
+        reloadRenderers = virtual(type("bfr"), "a", void.class);
+        saveOptions = virtual(type("avh"), "b", void.class);
+        Class<?> options = type("avh");
+        distance = field(options, "c"); frameLimit = field(options, "g"); clouds = field(options, "h");
+        particles = field(options, "aM"); fancy = field(options, "i"); ao = field(options, "j");
+        vsync = field(options, "t"); vbo = field(options, "u"); shadows = field(options, "W");
         resize();
     }
 
@@ -87,9 +105,98 @@ public final class Game189 {
     }
 
     public void resize() throws Throwable {
+        int w = displayWidth.getInt(minecraft), h = displayHeight.getInt(minecraft), scale = guiScale.getInt(settings);
+        boolean useUnicode = (boolean) unicode.invokeExact(minecraft);
+        if (resolutionCache.matches(w, h, scale, useUnicode)) return;
         Object scaled = scaledResolution.newInstance(minecraft);
         width = (int) scaledWidth.invokeExact(scaled);
         height = (int) scaledHeight.invokeExact(scaled);
+        resolutionCache.update(w, h, scale, useUnicode);
+    }
+
+    public VideoSettings videoSettings() throws IllegalAccessException {
+        VideoSettings v = new VideoSettings();
+        v.distance = distance.getInt(settings); v.fps = frameLimit.getInt(settings);
+        v.clouds = clouds.getInt(settings); v.particles = particles.getInt(settings);
+        v.fancy = fancy.getBoolean(settings); v.ambientOcclusion = ao.getInt(settings);
+        v.vsync = vsync.getBoolean(settings); v.vbo = vbo.getBoolean(settings); v.shadows = shadows.getBoolean(settings);
+        return v;
+    }
+
+    public boolean videoMatches(VideoSettings v) throws IllegalAccessException {
+        return distance.getInt(settings) == v.distance && frameLimit.getInt(settings) == v.fps
+                && clouds.getInt(settings) == v.clouds && particles.getInt(settings) == v.particles
+                && fancy.getBoolean(settings) == v.fancy && ao.getInt(settings) == v.ambientOcclusion
+                && vsync.getBoolean(settings) == v.vsync && vbo.getBoolean(settings) == v.vbo
+                && shadows.getBoolean(settings) == v.shadows;
+    }
+
+    /** Apply all fields before a single terrain reload. Called only from a user action. */
+    public void applyVideo(VideoSettings v) throws Throwable {
+        v.sanitize();
+        VideoSettings old = videoSettings();
+        if (old.same(v)) return;
+        distance.setInt(settings, v.distance); frameLimit.setInt(settings, v.fps);
+        clouds.setInt(settings, v.clouds); particles.setInt(settings, v.particles);
+        fancy.setBoolean(settings, v.fancy); ao.setInt(settings, v.ambientOcclusion);
+        vsync.setBoolean(settings, v.vsync); vbo.setBoolean(settings, v.vbo); shadows.setBoolean(settings, v.shadows);
+        if (old.vsync != v.vsync) Display.setVSyncEnabled(v.vsync);
+        Object renderer = renderGlobal.get(minecraft);
+        if (renderer != null && (old.distance != v.distance || old.fancy != v.fancy
+                || old.ambientOcclusion != v.ambientOcclusion || old.vbo != v.vbo)) reloadRenderers.invokeExact(renderer);
+        saveOptions.invokeExact(settings);
+    }
+
+    public Object worldIdentity() throws IllegalAccessException { return world.get(minecraft); }
+
+    public void beginParticles() throws Throwable {
+        if (particleAccess == null) particleAccess = new ParticleAccess();
+        particleAccess.planes = null;
+    }
+
+    public boolean particleVisible(Object particle, float partial, float rx, float rxz, float rz, float ryz, float rxy) throws Throwable {
+        return particleAccess == null || particleAccess.visible(particle, partial, rx, rxz, rz, ryz, rxy);
+    }
+
+    private static MethodHandle getter(Class<?> owner, String name, Class<?> result) throws Exception {
+        return MethodHandles.lookup().unreflectGetter(field(owner, name)).asType(MethodType.methodType(result, Object.class));
+    }
+
+    /** Lazy and isolated: a culling binding failure must not disable the HUD. */
+    private static final class ParticleAccess {
+        private final Class<?> base = type("beb"), buffer = type("bfd"), entity = type("pk");
+        private final MethodHandle px = getter(entity, "p", double.class), py = getter(entity, "q", double.class), pz = getter(entity, "r", double.class);
+        private final MethodHandle x = getter(entity, "s", double.class), y = getter(entity, "t", double.class), z = getter(entity, "u", double.class);
+        private final MethodHandle size = getter(base, "h", float.class);
+        private final Field cameraX = field(base, "aw"), cameraY = field(base, "ax"), cameraZ = field(base, "ay");
+        private final MethodHandle frustum = handle(type("bib"), "a").asType(MethodType.methodType(Object.class));
+        private final Field frustumPlanes = field(type("bid"), "a");
+        private float[][] planes;
+        private double cx, cy, cz;
+        private final ClassValue<Boolean> ordinary = new ClassValue<Boolean>() {
+            @Override protected Boolean computeValue(Class<?> type) {
+                try {
+                    // Overridden renderers (including those calling super) retain vanilla rendering.
+                    return type.getMethod("a", buffer, entity, float.class, float.class, float.class,
+                            float.class, float.class, float.class).getDeclaringClass() == base;
+                } catch (NoSuchMethodException error) { return false; }
+            }
+        };
+        ParticleAccess() throws Exception { }
+
+        boolean visible(Object p, float partial, float rx, float rxz, float rz, float ryz, float rxy) throws Throwable {
+            if (!ordinary.get(p.getClass())) return true;
+            if (planes == null) {
+                Object clipping = (Object) frustum.invokeExact();
+                planes = (float[][]) frustumPlanes.get(clipping);
+                cx = cameraX.getDouble(null); cy = cameraY.getDouble(null); cz = cameraZ.getDouble(null);
+            }
+            return ParticleVisibility.visible(planes,
+                    ParticleVisibility.center((double) px.invokeExact(p), (double) x.invokeExact(p), partial, cx),
+                    ParticleVisibility.center((double) py.invokeExact(p), (double) y.invokeExact(p), partial, cy),
+                    ParticleVisibility.center((double) pz.invokeExact(p), (double) z.invokeExact(p), partial, cz),
+                    (float) size.invokeExact(p), rx, rxz, rz, ryz, rxy);
+        }
     }
 
     public Object screen() throws IllegalAccessException { return screen.get(minecraft); }
@@ -121,6 +228,9 @@ public final class Game189 {
         enableTexture.invokeExact(); enableBlend.invokeExact(); disableAlpha.invokeExact();
         blendFunction.invokeExact(770, 771, 1, 0);
         bindTexture.invokeExact(texture);
+        inkColor(argb);
+    }
+    public void inkColor(int argb) throws Throwable {
         color.invokeExact(((argb >> 16) & 255) / 255f, ((argb >> 8) & 255) / 255f,
                 (argb & 255) / 255f, ((argb >>> 24) & 255) / 255f);
     }

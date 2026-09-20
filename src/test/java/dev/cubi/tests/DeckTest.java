@@ -26,12 +26,12 @@ public final class DeckTest {
     }
 
     private static void navigation() {
-        DeckState nav = new DeckState(3);
+        DeckState nav = new DeckState(DeckLayout.CARDS.length);
         check(nav.page() == Page.MODULES && !nav.capturing(), "Menu opens on an uncluttered module browser");
-        nav.settings(2);
-        check(nav.page() == Page.SETTINGS && nav.selected() == 2, "Settings target the requested module");
+        nav.settings(1);
+        check(nav.page() == Page.SETTINGS && nav.selected() == 1, "Settings target the requested module");
         nav.captureModule();
-        check(nav.binding() == 2, "Binding focus belongs to the selected module");
+        check(nav.binding() == 1, "Binding focus belongs to the selected module");
         check(!nav.back() && !nav.capturing() && nav.page() == Page.SETTINGS, "First Escape cancels key capture only");
         check(!nav.back() && nav.page() == Page.MODULES, "Escape from settings returns to modules");
         check(nav.back(), "Escape from a root tab closes the screen");
@@ -40,9 +40,9 @@ public final class DeckTest {
         nav.edit(); nav.edit();
         check(nav.page() == Page.EDITOR && !nav.capturing(), "Editor clears keyboard capture");
         check(!nav.back() && nav.page() == Page.APPEARANCE, "Editor preserves its origin even if requested twice");
-        nav.settings(1); nav.edit(); nav.nextModule();
-        check(nav.selected() == 2, "Tab selects the next widget while editing");
-        check(!nav.back() && nav.page() == Page.SETTINGS && nav.selected() == 2, "Editor returns to settings for the selected widget");
+        nav.settings(0); nav.edit(); nav.nextModule();
+        check(nav.selected() == 1, "Tab selects the next widget while editing");
+        check(!nav.back() && nav.page() == Page.SETTINGS && nav.selected() == 1, "Editor returns to settings for the selected widget");
         nav.nextModule();
         check(nav.selected() == 0, "Widget selection wraps without indexing past the registry");
         nav.captureModule(); nav.tab(Page.APPEARANCE);
@@ -52,12 +52,15 @@ public final class DeckTest {
         try { nav.captureModule(); } catch (IllegalStateException expected) { guarded = true; }
         check(guarded, "A hidden module-binding control cannot capture keys from appearance");
         guarded = false;
-        try { nav.select(3); } catch (IllegalArgumentException expected) { guarded = true; }
+        try { nav.select(2); } catch (IllegalArgumentException expected) { guarded = true; }
         check(guarded && nav.selected() == 0, "Invalid selections cannot corrupt navigation");
+        nav.tab(Page.PERFORMANCE); nav.diagnostics(); nav.edit();
+        check(!nav.back() && nav.page() == Page.DIAGNOSTICS, "Editor returns to diagnostics");
+        check(!nav.back() && nav.page() == Page.PERFORMANCE && nav.back(), "Diagnostics returns to performance before closing");
     }
 
     private static void geometry() {
-        List<Rect> header = Arrays.asList(DeckLayout.EDIT, DeckLayout.CLOSE, DeckLayout.MODULES_TAB, DeckLayout.APPEARANCE_TAB);
+        List<Rect> header = Arrays.asList(DeckLayout.EDIT, DeckLayout.CLOSE, DeckLayout.MODULES_TAB, DeckLayout.APPEARANCE_TAB, DeckLayout.PERFORMANCE_TAB);
         List<Rect> modules = new ArrayList<Rect>(header);
         for (int i = 0; i < DeckLayout.CARDS.length; i++) {
             Rect card = DeckLayout.CARDS[i], toggle = DeckLayout.TOGGLES[i], settings = DeckLayout.SETTINGS[i];
@@ -80,6 +83,14 @@ public final class DeckTest {
         appearance.add(DeckLayout.WATERMARK); appearance.add(DeckLayout.MENU_BIND);
         appearance.addAll(Arrays.asList(DeckLayout.ACCENTS));
         check(disjoint(appearance), "Appearance controls have independent hit regions");
+        List<Rect> performance = new ArrayList<Rect>(header);
+        performance.addAll(Arrays.asList(DeckLayout.PROFILES));
+        performance.addAll(Arrays.asList(DeckLayout.PERFORMANCE_OPTIONS));
+        performance.add(DeckLayout.RESTORE_PERFORMANCE); performance.add(DeckLayout.DIAGNOSTICS);
+        check(disjoint(performance), "Performance profiles, options and actions do not overlap");
+        List<Rect> diagnostics = new ArrayList<Rect>(header);
+        diagnostics.addAll(Arrays.asList(DeckLayout.BACK, DeckLayout.CAPTURE_START, DeckLayout.CAPTURE_STOP, DeckLayout.CAPTURE_EXPORT));
+        check(disjoint(diagnostics), "Diagnostic actions do not overlap");
         List<Rect> editor = Arrays.asList(DeckLayout.EDITOR_MINUS, DeckLayout.EDITOR_PLUS, DeckLayout.EDITOR_RESET, DeckLayout.EDITOR_DONE);
         check(disjoint(editor), "Editor toolbar actions do not overlap");
         Rect bar = new Rect(0, 0, DeckLayout.EDITOR_WIDTH, DeckLayout.EDITOR_HEIGHT);
@@ -88,6 +99,7 @@ public final class DeckTest {
         check(Math.abs(DeckLayout.opacityAt(DeckLayout.OPACITY.centerX()) - 0.475f) < 0.004f, "Slider midpoint maps correctly");
 
         List<Rect> all = new ArrayList<Rect>(modules); all.addAll(settings); all.addAll(appearance);
+        all.addAll(performance); all.addAll(diagnostics);
         Rect canvas = new Rect(0, 0, DeckLayout.WIDTH, DeckLayout.HEIGHT);
         boolean fits = true;
         for (Rect rect : all) fits &= contains(canvas, rect);
@@ -134,6 +146,8 @@ public final class DeckTest {
         check(46 + width(ClientIdentity.NAME, 14, bold) <= 154, "Full client name fits the Minecraft main-menu badge");
         check(54 + width(ClientIdentity.NAME, 17, bold) + 20 < DeckLayout.EDIT.x, "Header name and editor button do not collide");
         check(12 + width("Keystrokes", 10, bold) < DeckLayout.EDITOR_MINUS.x, "Longest module name fits the editor selection group");
+        check(width("LMB", 7, bold) <= 35 && width("RMB", 7, bold) <= 35 && width("256 CPS", 7, bold) <= 35,
+                "Mouse labels and maximum bounded CPS fit inside each Keystrokes mouse cell");
     }
     private static float width(String value, float size, float[] advances) {
         float width = 0;

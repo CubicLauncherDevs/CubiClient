@@ -25,7 +25,7 @@ public final class PrepareClasses {
             CubiTransformer transformer = new CubiTransformer();
             Path patched = Paths.get(arguments[2]);
             try (ZipFile original = new ZipFile(arguments[1])) {
-                for (String name : new String[] {"ave", "avo", "aya"}) {
+                for (String name : CubiTransformer.TARGETS) {
                     ZipEntry entry = original.getEntry(name + ".class");
                     if (entry == null) throw new IllegalArgumentException("Missing vanilla class " + name);
                     byte[] bytes;

@@ -3,6 +3,7 @@ package dev.cubi.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.cubi.ui.Theme;
+import dev.cubi.performance.PerformanceSettings;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,7 @@ public final class ClientConfig {
     public int themeRevision;
     public int accent;
     public boolean watermark = true;
+    public PerformanceSettings performance = new PerformanceSettings();
     public Map<String, ModuleState> modules = new LinkedHashMap<String, ModuleState>();
     private transient Path file;
     private transient boolean dirty;
@@ -81,6 +83,8 @@ public final class ClientConfig {
             config.dirty = true;
         }
         if (config.accent < 0 || config.accent > 3) config.accent = 0;
+        if (config.performance == null) config.performance = new PerformanceSettings();
+        config.performance.sanitize();
         config.file = file;
         return config;
     }

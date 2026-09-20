@@ -14,7 +14,10 @@ public final class Ink {
 
     public Ink(Game189 game) throws Throwable { this.game = game; atlas = new UiAtlas(game); }
     private int tint(int color) { return alpha(color, ((color >>> 24) / 255f) * opacity); }
+    public void beginBatch() { atlas.beginBatch(); }
+    public void endBatch() throws Throwable { atlas.endBatch(); }
     public void rect(int x, int y, int w, int h, int color) throws Throwable {
+        atlas.flush();
         if (w > 0 && h > 0) game.rect(x, y, x + w, y + h, tint(color));
     }
     public void round(float x, float y, float w, float h, float radius, int color) throws Throwable { atlas.rounded(x, y, w, h, radius, tint(color)); }

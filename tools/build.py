@@ -46,7 +46,8 @@ def main():
         shutil.rmtree(build_classes)
     tool_cp = str(classes) + os.pathsep + classpath
     compile_sources(javac, sorted((ROOT / "src/build/java").rglob("*.java")), build_classes, tool_cp)
-    original = minecraft_jar(minecraft_metadata()) if args.replacement or args.test else None
+    metadata = minecraft_metadata() if args.replacement or args.test else None
+    original = minecraft_jar(metadata) if metadata else None
     patched = ROOT / "build" / "patched"
     prepare = [java_tool("java"), "-cp", str(build_classes) + os.pathsep + tool_cp,
                "dev.cubi.build.PrepareClasses", str(classes)]
@@ -80,6 +81,9 @@ def main():
     print("Listo: " + str(distribution))
     if args.replacement:
         replacement = build_replacement(original, distribution, patched, ROOT / "dist/replacement/minecraft.jar")
+        if args.test:
+            from verify_runtime import verify_runtime
+            verify_runtime(java_tool("java"), replacement, metadata)
         print("Prism > Editar > Versión > Reemplazar Minecraft.jar: " + str(replacement))
 
 

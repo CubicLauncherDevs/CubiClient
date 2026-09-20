@@ -15,9 +15,10 @@ class SmokeProcessTests(unittest.TestCase):
     def test_output_is_retained(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "smoke.log"
-            status = run_game([sys.executable, "-c", "print('completed')"], log, timeout=5)
+            status = run_game([sys.executable, "-c", "import os; print('completed'); print(os.getcwd())"], log, timeout=5)
             self.assertEqual(status, 0)
             self.assertIn("completed", log.read_text())
+            self.assertIn(str(Path(directory).resolve()), log.read_text())
 
     @unittest.skipUnless(os.name == "posix", "POSIX process signalling")
     def test_timeout_reaps_unresponsive_child(self):

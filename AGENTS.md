@@ -18,7 +18,7 @@
 - Headless success is not in-game verification. Check `docs/VERIFICATION.md` before claiming graphical coverage; existing screenshots can predate the current UI.
 
 ## Integration traps
-- `PrepareClasses` applies `CubiTransformer` to `ave`, `avo`, `aya` at build time. The replacement starts at `net.minecraft.client.main.Main` with vanilla libraries; `tools/replacement.py` rejects runtime ASM/LaunchWrapper references in Cubi classes. Keep build-only code out of runtime paths.
+- `PrepareClasses` applies `CubiTransformer.TARGETS` (`ave`, `avo`, `aya`, `bec`, `beb`) at build time. Keep `tools/replacement.py:PATCHED_CLASSES` synchronized. The replacement starts at `net.minecraft.client.main.Main` with vanilla libraries; the packager rejects runtime ASM/LaunchWrapper references in Cubi classes. Keep build-only code out of runtime paths.
 - Put Minecraft access in `bridge/Game189` using its cached handles and runtime loader; update binding checks in `SelfTest` when adding/changing obfuscated access. There is no decompiled Minecraft source workspace.
 - `ScreenGenerator` emits `cubi.generated.ControlScreen`. Its namespace must remain outside `dev.cubi.*`, which the optional `CubiTweaker` excludes from its game classloader.
 - **Do not open the menu directly inside keyboard dispatch.** Vanilla forwards the same event to the newly opened screen, immediately closing it. Preserve `MenuActivation`'s end-of-tick opening and the consumed-event/repeat guards in `Hooks` and `ControlDeck`.
@@ -26,8 +26,9 @@
 ## Editing UI and generated assets
 - `src/build/java/` is tracked source for screen/atlas generation. Root `/build/`, `dist/`, `.cache/`, and `run/` are outputs. Keep the leading slash in `.gitignore`'s `/build/`: `build/` previously hid the source generators.
 - Edit `UiAssets` and rebuild rather than editing generated classes, atlas PNGs or metrics. Font changes must include pinned downloads and the bundled license expected by `tools/replacement.py`.
-- Keep palette/radii in `Theme`, navigation in `DeckState`, and shared drawing/hit regions in `DeckLayout`. The grid currently has three slots: adding a module requires updating both `ModuleRegistry` and the layout/interaction tests.
+- Keep palette/radii in `Theme`, navigation in `DeckState`, and shared drawing/hit regions in `DeckLayout`. The grid has two slots (FPS and Keystrokes with integrated CPS): adding a module requires updating both `ModuleRegistry` and the layout/interaction tests. Keep Keystrokes positions/binds and legacy `clicks` config data when updating existing configurations.
 - Use `Ink`/`UiAtlas` and `Game189`'s cached `GlStateManager` access to keep vanilla's graphics-state cache synchronized. Font rasterization belongs in codegen, not the render loop.
 - Configuration lives at `<instance gameDir>/cubiclient/config.json`, not necessarily `~/.minecraft`. Preserve saved positions/binds and one-time `layoutRevision`/`themeRevision` migrations; save interactions or drag completion, not every frame.
+- Performance presets apply only on user actions; vanilla `options.txt` remains authoritative. Preserve the first restore point across profile changes/restarts. See `docs/PERFORMANCE.md` for culling scope and frame-capture semantics; do not describe smoke captures as FPS benchmarks.
 
 More context: `docs/ARCHITECTURE.md` for wiring; `THIRD_PARTY.md` for font licensing and CubicLauncher theme references.

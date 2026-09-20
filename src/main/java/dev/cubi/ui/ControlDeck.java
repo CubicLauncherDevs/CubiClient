@@ -19,6 +19,7 @@ public final class ControlDeck {
     private static final Motion backgroundSwitch = new Motion(), shadowSwitch = new Motion(), watermarkSwitch = new Motion();
     private static CubiClient client;
     private static DeckState nav;
+    private static PerformancePanel performance;
     private static Motion[] hover, enabled;
     private static Object previous;
     private static boolean dragging, opacityDrag;
@@ -28,11 +29,12 @@ public final class ControlDeck {
 
     private ControlDeck() { }
 
-    public static void open(CubiClient instance, Object parent) {
+    public static void open(CubiClient instance, Object parent) throws Throwable {
         client = instance; previous = parent;
         int selected = nav == null ? 0 : Math.min(nav.selected(), instance.modules.all.length - 1);
         nav = new DeckState(instance.modules.all.length);
         nav.select(selected);
+        performance = new PerformancePanel(instance);
         hover = new Motion[instance.modules.all.length];
         enabled = new Motion[instance.modules.all.length];
         for (int i = 0; i < hover.length; i++) { hover[i] = new Motion(); enabled[i] = new Motion(); }
@@ -79,12 +81,14 @@ public final class ControlDeck {
             action("Editar HUD", EDIT, mx, my, true);
             action("×", CLOSE, mx, my, false);
             ink.rect(20, 61, WIDTH - 40, 1, Theme.BORDER);
-            tab("Módulos", MODULES_TAB, nav.page() != Page.APPEARANCE, mx, my);
+            tab("Módulos", MODULES_TAB, nav.page() == Page.MODULES || nav.page() == Page.SETTINGS, mx, my);
             tab("Apariencia", APPEARANCE_TAB, nav.page() == Page.APPEARANCE, mx, my);
+            tab("Rendimiento", PERFORMANCE_TAB, nav.page() == Page.PERFORMANCE || nav.page() == Page.DIAGNOSTICS, mx, my);
 
             if (nav.page() == Page.MODULES) drawModules(mx, my);
             else if (nav.page() == Page.SETTINGS) drawSettings(mx, my);
-            else drawAppearance(mx, my);
+            else if (nav.page() == Page.APPEARANCE) drawAppearance(mx, my);
+            else performance.draw(nav.page() == Page.DIAGNOSTICS, mx, my);
 
             ink.rect(20, 333, WIDTH - 40, 1, Theme.BORDER);
             if (nav.capturing()) {
@@ -93,7 +97,7 @@ public final class ControlDeck {
                         : "Pulsa una tecla · Esc cancela · Supr elimina el atajo", 20, 346, client.accent());
             } else {
                 ink.small(client.config.status, 20, 346, Theme.MUTED);
-                ink.center(nav.page() == Page.SETTINGS ? "Esc: volver a módulos" : "Esc: cerrar", 185, 346, 190, 8, false, Theme.SECONDARY);
+                ink.center(nav.page() == Page.SETTINGS || nav.page() == Page.DIAGNOSTICS ? "Esc: volver" : "Esc: cerrar", 185, 346, 190, 8, false, Theme.SECONDARY);
                 String shortcut = keyName(client.config.menuKey) + " · Cerrar";
                 ink.small(shortcut, WIDTH - 20 - ink.width(shortcut, 8, false), 346, Theme.SECONDARY);
             }
@@ -119,10 +123,10 @@ public final class ControlDeck {
             float over = hover[i].to(card.contains(mx, my) ? 1 : 0);
             ink.surface(card.x, card.y, card.w, card.h, Theme.CARD_RADIUS,
                     Ink.mix(Theme.CARD, Theme.SELECTED, over * 0.5f), Ink.mix(Theme.BORDER, Theme.BORDER_HOVER, over));
-            ink.icon(i + 1, card.x + 14, card.y + 14, 17, Theme.SECONDARY);
+            ink.icon(module.id.equals("keys") ? 3 : 1, card.x + 14, card.y + 14, 17, Theme.SECONDARY);
             ink.text(module.title, card.x + 38, card.y + 17, 12, true, Theme.TEXT);
             ink.small(module.description, card.x + 14, card.y + 37, Theme.SECONDARY);
-            float previewScale = i == 2 ? 0.62f : 1.1f;
+            float previewScale = Math.min(1.1f, Math.min((card.w - 28f) / module.width, 64f / module.height));
             float alpha = ink.opacity;
             if (!module.state.enabled) ink.opacity *= 0.55f;
             try {
@@ -276,6 +280,8 @@ public final class ControlDeck {
             if (EDIT.contains(mx, my)) { finishInteraction(); nav.edit(); return; }
             if (MODULES_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.MODULES); return; }
             if (APPEARANCE_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.APPEARANCE); return; }
+            if (PERFORMANCE_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.PERFORMANCE); return; }
+            if (nav.page() == Page.PERFORMANCE || nav.page() == Page.DIAGNOSTICS) { performance.click(nav, mx, my); return; }
             if (nav.page() == Page.MODULES) {
                 for (int i = 0; i < client.modules.all.length; i++) {
                     if (TOGGLES[i].contains(mx, my)) { toggleModule(i); return; }
@@ -324,7 +330,7 @@ public final class ControlDeck {
         client.modules.all[nav.selected()].state.opacity = DeckLayout.opacityAt(mx);
         client.config.changed();
     }
-    private static void changed() { client.config.changed(); client.config.save(); }
+    private static void changed() { client.capture.stop("HUD/apariencia modificados"); client.config.changed(); client.config.save(); }
     private static void finishInteraction() { dragging = false; opacityDrag = false; client.config.save(); }
     public static void release(int mouseX, int mouseY, int button) { if (client != null && button == 0) finishInteraction(); }
 
@@ -365,6 +371,7 @@ public final class ControlDeck {
         } catch (Throwable error) { recover(error); }
     }
     private static void scale(float amount) {
+        client.capture.stop("Escala del HUD modificada");
         HudModule module = client.modules.all[nav.selected()];
         module.state.scale = ClientConfig.finiteClamp(Math.round((module.state.scale + amount) * 100) / 100f, 0.75f, 2, 1);
         client.config.changed();

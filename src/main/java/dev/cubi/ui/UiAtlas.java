@@ -17,6 +17,7 @@ final class UiAtlas {
     private final int texture;
     private final float[][] advances = new float[2][224];
     private final float[] top = new float[2];
+    private boolean batching, drawing;
 
     UiAtlas(Game189 game) throws Throwable {
         this.game = game;
@@ -58,6 +59,27 @@ final class UiAtlas {
         return result * size / 36;
     }
 
+    void beginBatch() {
+        if (batching) throw new IllegalStateException("Nested atlas batch");
+        batching = true;
+    }
+    void endBatch() throws Throwable { batching = false; flush(); }
+    void flush() throws Throwable {
+        if (!drawing) return;
+        drawing = false;
+        GL11.glEnd();
+        game.finishInk();
+    }
+    private void begin(int color) throws Throwable {
+        if (drawing) game.inkColor(color); // glColor is legal inside glBegin; cache stays synchronized.
+        else {
+            game.textureInk(texture, color);
+            GL11.glBegin(GL11.GL_QUADS);
+            drawing = true;
+        }
+    }
+    private void end() throws Throwable { if (!batching) flush(); }
+
     void text(String value, float x, float y, float size, boolean bold, int color) throws Throwable {
         text(value, x, y, size, bold, color, 0);
     }
@@ -65,8 +87,7 @@ final class UiAtlas {
     void text(String value, float x, float y, float size, boolean bold, int color, float tracking) throws Throwable {
         int face = bold ? 1 : 0;
         float scale = size / 36;
-        game.textureInk(texture, color);
-        GL11.glBegin(GL11.GL_QUADS);
+        begin(color);
         try {
             for (int i = 0; i < value.length(); i++) {
                 int glyph = glyph(value.charAt(i));
@@ -75,7 +96,7 @@ final class UiAtlas {
                         cell % 32 * 64, cell / 32 * 64, 64, 64);
                 x += advances[face][glyph - 32] * scale + tracking;
             }
-        } finally { GL11.glEnd(); game.finishInk(); }
+        } finally { end(); }
     }
 
     void rounded(float x, float y, float width, float height, float radius, int color) throws Throwable {
@@ -89,8 +110,7 @@ final class UiAtlas {
     private void patch(float x, float y, float width, float height, float radius, int color, int sourceX) throws Throwable {
         float r = Math.min(radius, Math.min(width, height) / 2);
         if (width <= 0 || height <= 0 || (color >>> 24) == 0) return;
-        game.textureInk(texture, color);
-        GL11.glBegin(GL11.GL_QUADS);
+        begin(color);
         try {
             for (int row = 0; row < 3; row++) for (int col = 0; col < 3; col++) {
                 float dx = col == 0 ? x : col == 1 ? x + r : x + width - r;
@@ -99,14 +119,13 @@ final class UiAtlas {
                 quad(dx, dy, w, h, sourceX + (col == 0 ? 0 : col == 1 ? 16 : 48),
                         960 + (row == 0 ? 0 : row == 1 ? 16 : 48), col == 1 ? 32 : 16, row == 1 ? 32 : 16);
             }
-        } finally { GL11.glEnd(); game.finishInk(); }
+        } finally { end(); }
     }
 
     void icon(int icon, float x, float y, float size, int color) throws Throwable {
-        game.textureInk(texture, color);
-        GL11.glBegin(GL11.GL_QUADS);
+        begin(color);
         try { quad(x, y, size, size, (icon + 1) * 64, 960, 64, 64); }
-        finally { GL11.glEnd(); game.finishInk(); }
+        finally { end(); }
     }
 
     private static int glyph(char c) { return c >= 32 && c < 256 ? c : '?'; }

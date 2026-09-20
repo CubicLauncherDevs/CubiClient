@@ -140,6 +140,7 @@ public final class SmokeTest {
                 ClientConfig persisted = ClientConfig.load(client.game.directory.toPath().resolve("cubiclient/config.json"));
                 require(persisted.accent == 1 && persisted.state("frames").opacity > 0.65f, "Visual settings persist");
                 click(DeckLayout.ACCENTS[0]);
+                performanceRegression();
                 client.modules.all[0].state.opacity = 0.48f;
                 client.config.changed();
                 click(DeckLayout.MODULES_TAB);
@@ -201,7 +202,46 @@ public final class SmokeTest {
                 require(!failed.getBoolean(null), "No HUD errors in world");
                 require(!client.performanceLabel.contains("--"), "HUD was rendered and measured");
                 screenshot("03-in-world.png");
-                System.out.println("PASS / WORLD: vanilla singleplayer + HUD. Last CPU sample: " + client.performanceLabel);
+                particleVisibilityRegression();
+                System.out.println("PASS / WORLD: vanilla singleplayer + HUD. Last elapsed HUD sample: " + client.performanceLabel);
+                client.open();
+                click(DeckLayout.PERFORMANCE_TAB);
+            }
+        });
+        Thread.sleep(600);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                screenshot("07-performance.png");
+                click(DeckLayout.DIAGNOSTICS);
+            }
+        });
+        Thread.sleep(600);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                screenshot("08-diagnostics.png");
+                click(DeckLayout.CAPTURE_START);
+                require(client.capture.active(), "Diagnostics starts from the performance UI");
+                ControlDeck.type('\0', client.config.menuKey);
+            }
+        });
+        Thread.sleep(8000);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                client.open();
+                click(DeckLayout.PERFORMANCE_TAB); click(DeckLayout.DIAGNOSTICS);
+                click(DeckLayout.CAPTURE_STOP);
+                require(client.capture.count() > 0 && client.capture.summary() != null, "Frame hooks record gameplay after warmup");
+                click(DeckLayout.CAPTURE_EXPORT);
+                require(client.config.status.startsWith("Exportada"), "Capture exports from the diagnostic UI");
+                require(org.lwjgl.opengl.GL11.glGetError() == org.lwjgl.opengl.GL11.GL_NO_ERROR, "Performance views leave no GL error");
+                System.out.println("PASS / CAPTURE: frame/stage hooks, warmup, summary and JSON export; " + client.capture.count() + " frames (functional test, not a benchmark).");
+            }
+        });
+        Thread.sleep(600);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                screenshot("09-diagnostic-result.png");
+                ControlDeck.type('\0', client.config.menuKey);
                 originalMenuKey = client.config.menuKey;
                 originalRepeatEvents = Keyboard.areRepeatEventsEnabled();
                 client.config.menuKey = Keyboard.KEY_RSHIFT;
@@ -232,6 +272,67 @@ public final class SmokeTest {
                 minecraft.getClass().getDeclaredMethod("m").invoke(minecraft);
             }
         });
+    }
+
+    private static void performanceRegression() throws Throwable {
+        dev.cubi.performance.VideoSettings original = client.game.videoSettings();
+        dev.cubi.performance.PerformanceSettings saved = client.config.performance;
+        client.config.performance = new dev.cubi.performance.PerformanceSettings();
+        try {
+            click(DeckLayout.PERFORMANCE_TAB);
+            requirePage(DeckState.Page.PERFORMANCE, "Performance tab opens");
+            click(DeckLayout.PROFILES[1]);
+            dev.cubi.performance.VideoSettings competitive = client.game.videoSettings();
+            require(!competitive.fancy && competitive.clouds == 0 && !competitive.shadows, "Competitive applies real vanilla fields");
+            click(DeckLayout.PERFORMANCE_OPTIONS[9]);
+            require(!client.config.performance.particleCulling && client.config.performance.profile.equals("custom"), "Culling can be independently disabled");
+            click(DeckLayout.RESTORE_PERFORMANCE);
+            require(client.game.videoSettings().same(original) && client.config.performance.particleCulling, "Restore recovers original video and optimization controls");
+            click(DeckLayout.DIAGNOSTICS);
+            requirePage(DeckState.Page.DIAGNOSTICS, "Diagnostics opens separately");
+            ControlDeck.type('\0', Keyboard.KEY_ESCAPE);
+            requirePage(DeckState.Page.PERFORMANCE, "Diagnostics Escape returns to performance");
+        } finally {
+            client.game.applyVideo(original); client.config.performance = saved;
+            client.config.changed(); client.config.save();
+        }
+    }
+
+    private static void particleVisibilityRegression() throws Throwable {
+        Class<?> particle = Game189.type("beb");
+        Field[] camera = {particle.getDeclaredField("aw"), particle.getDeclaredField("ax"), particle.getDeclaredField("ay")};
+        double[] previous = new double[3];
+        for (int i = 0; i < 3; i++) { previous[i] = camera[i].getDouble(null); camera[i].setDouble(null, 0); }
+        boolean culling = client.config.performance.particleCulling;
+        int matrixMode = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MATRIX_MODE);
+        org.lwjgl.opengl.GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION);
+        org.lwjgl.opengl.GL11.glPushMatrix(); org.lwjgl.opengl.GL11.glLoadIdentity();
+        org.lwjgl.opengl.GL11.glOrtho(-1, 1, -1, 1, -1, 1);
+        org.lwjgl.opengl.GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+        org.lwjgl.opengl.GL11.glPushMatrix(); org.lwjgl.opengl.GL11.glLoadIdentity();
+        try {
+            java.lang.reflect.Constructor<?> constructor = particle.getConstructor(Game189.type("adm"), double.class,
+                    double.class, double.class, double.class, double.class, double.class);
+            Object inside = constructor.newInstance(client.game.worldIdentity(), 0d, 0d, 0d, 0d, 0d, 0d);
+            Object outside = constructor.newInstance(client.game.worldIdentity(), 10d, 0d, 0d, 0d, 0d, 0d);
+            client.config.performance.particleCulling = true;
+            Hooks.particlesBegin();
+            require(Hooks.particleVisible(inside, 0, 1, 1, 0, 0, 1), "Actual frustum retains visible vanilla particle");
+            require(!Hooks.particleVisible(outside, 0, 1, 1, 0, 0, 1), "Actual frustum skips offscreen vanilla particle");
+            // A culled base particle must return before touching the null vertex buffer.
+            particle.getMethod("a", Game189.type("bfd"), Game189.type("pk"), float.class, float.class, float.class,
+                    float.class, float.class, float.class).invoke(outside, null, null, 0f, 1f, 1f, 0f, 0f, 1f);
+            Hooks.particlesEnd();
+            require(Hooks.particleVisible(outside, 0, 1, 1, 0, 0, 1), "Special/out-of-pass rendering bypasses culling");
+            require(Hooks.particleCullingAvailable(), "Culling bindings remain healthy");
+            System.out.println("PASS / PERFORMANCE: profiles, restore, actual particle frustum and early render return.");
+        } finally {
+            Hooks.particlesEnd(); client.config.performance.particleCulling = culling;
+            for (int i = 0; i < 3; i++) camera[i].setDouble(null, previous[i]);
+            org.lwjgl.opengl.GL11.glPopMatrix();
+            org.lwjgl.opengl.GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION); org.lwjgl.opengl.GL11.glPopMatrix();
+            org.lwjgl.opengl.GL11.glMatrixMode(matrixMode);
+        }
     }
 
     /** Feed real LWJGL records into vanilla's runTick; never call Cubi's key handler directly. */

@@ -8,21 +8,34 @@ import dev.cubi.ui.Theme;
 /** Typed lifecycle dispatch. Stable array: no stream, reflection or event allocation. */
 public final class ModuleRegistry {
     public final HudModule[] all;
+    public final FrameModule frames;
+    public final KeysModule keys;
 
     public ModuleRegistry(CubiClient client) {
-        all = new HudModule[] {new FrameModule(client), new ClickModule(client), new KeysModule(client)};
+        frames = new FrameModule(client);
+        keys = new KeysModule(client);
+        all = new HudModule[] {frames, keys};
     }
 
     public void tick(CubiClient client) throws Throwable {
         for (HudModule module : all) if (module.state.enabled) module.tick(client);
+    }
+    public boolean visible(CubiClient client) {
+        if (client.config.watermark) return true;
+        for (HudModule module : all) if (module.state.enabled) return true;
+        return false;
     }
     public void render(CubiClient client) throws Throwable {
         for (HudModule module : all) if (module.state.enabled) module.render(client, false);
         if (client.config.watermark) {
             float right = 29 + client.ink.width(ClientIdentity.NAME, 10, true);
             int y = HudPlacement.watermarkY(client.game.width, client.game.height, right);
-            client.ink.icon(0, 12, y, 13, client.accent());
-            client.ink.text(ClientIdentity.NAME, 29, y + 2, 10, true, Theme.TEXT);
+            boolean batch = client.config.performance.hudBatching;
+            if (batch) client.ink.beginBatch();
+            try {
+                client.ink.icon(0, 12, y, 13, client.accent());
+                client.ink.text(ClientIdentity.NAME, 29, y + 2, 10, true, Theme.TEXT);
+            } finally { if (batch) client.ink.endBatch(); }
         }
     }
     public void resetLayout(CubiClient client) {

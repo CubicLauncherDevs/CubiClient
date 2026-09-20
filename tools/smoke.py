@@ -36,6 +36,7 @@ def run_game(command, log, timeout=210, grace=5):
             signal.signal(sig, interrupted)
         with Path(log).open("wb") as output:
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT,
+                                       cwd=str(Path(log).resolve().parent),
                                        preexec_fn=die_with_parent if sys.platform == "linux" else None)
             return process.wait(timeout=timeout)
     finally:
@@ -129,7 +130,8 @@ def main():
     for line in text.splitlines():
         if "[Cubi]" in line or "PASS /" in line:
             print(line)
-    if returncode or "PASS / OpenGL:" not in text or "PASS / WORLD:" not in text or "PASS / KEYBOARD:" not in text:
+    markers = ("PASS / OpenGL:", "PASS / WORLD:", "PASS / KEYBOARD:", "PASS / PERFORMANCE:", "PASS / CAPTURE:")
+    if returncode or any(marker not in text for marker in markers):
         raise RuntimeError("Smoke test falló. Consulta " + str(log))
     print("Capturas: " + str(game_dir / "screenshots"))
 

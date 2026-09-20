@@ -39,6 +39,7 @@ public final class SelfTest {
         themeMigration();
         atlasAssets();
         assertions += DeckTest.run();
+        assertions += PerformanceTest.run();
         placement();
         menuActivation();
         menuDispatchContract();
@@ -80,6 +81,9 @@ public final class SelfTest {
             state.enabled = false; state.x = 0.6f; state.y = 0.4f; state.scale = 1.5f; state.key = 37;
             config.menuKey = 50; config.accent = 2; config.watermark = false;
             state.background = false; state.shadow = false; state.opacity = 0.65f;
+            ClientConfig.ModuleState keys = config.state("keys"), legacyClicks = config.state("clicks");
+            keys.x = 0.31f; keys.y = 0.43f; keys.key = 44; keys.scale = 1.25f;
+            legacyClicks.enabled = false; legacyClicks.key = 36; legacyClicks.x = 0.7f;
             config.changed();
             check(config.save(), "Configuration saves");
             ClientConfig loaded = ClientConfig.load(file);
@@ -87,6 +91,11 @@ public final class SelfTest {
             check(loaded.menuKey == 50 && loaded.state("frames").x == 0.6f && loaded.state("frames").scale == 1.5f, "Layout and menu binding round-trip");
             check(loaded.accent == 2 && !loaded.watermark && !loaded.state("frames").background
                     && !loaded.state("frames").shadow && loaded.state("frames").opacity == 0.65f, "Visual settings round-trip");
+            check(loaded.state("keys").x == 0.31f && loaded.state("keys").y == 0.43f
+                    && loaded.state("keys").key == 44 && loaded.state("keys").scale == 1.25f,
+                    "Keystrokes placement, scale and binding survive CPS integration");
+            check(!loaded.state("clicks").enabled && loaded.state("clicks").key == 36 && loaded.state("clicks").x == 0.7f,
+                    "Legacy clicks configuration remains available without resetting Keystrokes");
             java.nio.file.attribute.FileTime modified = Files.getLastModifiedTime(file);
             check(loaded.save() && modified.equals(Files.getLastModifiedTime(file)), "Clean configuration causes no disk write");
             state.x = Float.NaN; state.y = -10; state.scale = Float.POSITIVE_INFINITY; state.key = 300; state.opacity = Float.NaN;
@@ -261,7 +270,7 @@ public final class SelfTest {
 
     private static void integration(ZipFile vanilla) throws Exception {
         CubiTransformer transformer = new CubiTransformer();
-        for (String name : new String[] {"ave", "avo", "aya"}) {
+        for (String name : CubiTransformer.TARGETS) {
             byte[] original = bytes(vanilla, name);
             byte[] transformed = transformer.transform(name, name, original);
             new ClassReader(transformed).accept(new CheckClassAdapter(new ClassWriter(0), true), 0);
@@ -275,6 +284,22 @@ public final class SelfTest {
             }
             check(hooks >= (name.equals("ave") ? 3 : 1), "Hooks are present in " + name);
             check(!Arrays.equals(original, transformed), "Transformation changes target " + name);
+            boolean duplicateRejected = false;
+            try { transformer.transform(name, name, transformed); } catch (IllegalStateException expected) { duplicateRejected = true; }
+            check(duplicateRejected, "Duplicate hooks cannot be silently installed in " + name);
+            if (name.equals("ave")) {
+                hook(output, "av", "()V", "frameBegin", 1);
+                hook(output, "av", "()V", "frameEnd", 1);
+                hook(output, "av", "()V", "stageBegin", 4);
+                hook(output, "av", "()V", "stageEnd", 4);
+            } else if (name.equals("bec")) {
+                hook(output, "a", "(Lpk;F)V", "particlesBegin", 1);
+                hook(output, "a", "(Lpk;F)V", "particlesEnd", 1);
+                hook(output, "b", "(Lpk;F)V", "particlesBegin", 0);
+            } else if (name.equals("beb")) {
+                hook(output, "a", "(Lbfd;Lpk;FFFFFF)V", "particleVisible", 1);
+                hook(output, "t_", "()V", "particleVisible", 0);
+            }
         }
         byte[] guiBytes = bytes(vanilla, "axu");
         check(transformer.transform("axu", "axu", guiBytes) == guiBytes, "Unrelated classes remain untouched");
@@ -283,8 +308,18 @@ public final class SelfTest {
         method(mc, "A", "()Lave;"); method(mc, "a", "(Laxu;)V"); method(mc, "ai", "()I");
         field(mc, "k", "Lavn;"); field(mc, "t", "Lavh;"); field(mc, "v", "Ljava/io/File;");
         field(mc, "m", "Laxu;"); field(mc, "f", "Lbdb;");
+        field(mc, "d", "I"); field(mc, "e", "I"); field(mc, "g", "Lbfr;"); method(mc, "d", "()Z");
+        method(node(vanilla, "bfr"), "a", "()V");
         ClassNode settings = node(vanilla, "avh");
         field(settings, "aA", "Z"); field(settings, "aC", "Z");
+        for (String name : new String[] {"aL", "c", "g", "h", "j", "aM"}) field(settings, name, "I");
+        for (String name : new String[] {"i", "t", "u", "W"}) field(settings, name, "Z");
+        method(settings, "b", "()V");
+        ClassNode particle = node(vanilla, "beb");
+        field(particle, "h", "F");
+        for (String name : new String[] {"aw", "ax", "ay"}) field(particle, name, "D");
+        for (String name : new String[] {"p", "q", "r", "s", "t", "u"}) field(node(vanilla, "pk"), name, "D");
+        method(node(vanilla, "bib"), "a", "()Lbid;"); field(node(vanilla, "bid"), "a", "[[F");
         for (String name : new String[] {"Y", "aa", "Z", "ab", "ac"}) field(settings, name, "Lavb;");
         method(node(vanilla, "avb"), "i", "()I");
         method(node(vanilla, "avn"), "a", "(Ljava/lang/String;FFI)I");
@@ -307,5 +342,20 @@ public final class SelfTest {
             check((override.access & Opcodes.ACC_PUBLIC) != 0, "Generated overrides accessible");
         }
         System.out.println("PASS / Transformadores y GuiScreen analizados sobre el cliente original de Mojang.");
+    }
+
+    private static void hook(ClassNode node, String methodName, String desc, String hookName, int expected) {
+        int count = 0;
+        for (Object item : node.methods) {
+            MethodNode method = (MethodNode) item;
+            if (!method.name.equals(methodName) || !method.desc.equals(desc)) continue;
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
+                if (instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (call.owner.equals("dev/cubi/core/Hooks") && call.name.equals(hookName)) count++;
+                }
+            }
+        }
+        check(count == expected, "Exact hook contract " + node.name + "." + methodName + desc + ": " + hookName);
     }
 }

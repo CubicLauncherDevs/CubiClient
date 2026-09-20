@@ -17,6 +17,7 @@ La organización toma como referencia la separación entre módulos y ajustes de
 - **Módulos:** tarjetas uniformes con activación independiente y botón de engranaje para configurar.
 - **Ajustes de módulo:** vista propia con botón «Volver», previsualización y filas para escala, opacidad, fondo, sombra y atajo.
 - **Apariencia:** tema, acento, «Mostrar CubiClient» y tecla para abrir/cerrar el menú.
+- **Rendimiento:** perfiles Equilibrado/Competitivo/Personalizado, ajustes gráficos, optimizaciones y diagnóstico exportable.
 - **Editar HUD:** acceso desde la cabecera; vuelve a la vista desde la que se abrió.
 
 El nombre **CubiClient** aparece completo en la HUD, el menú y el título de ventana. En pantallas estrechas, la marca se eleva por encima de la hotbar para no solaparse con ella.
@@ -35,16 +36,17 @@ La apertura con Shift derecho se aplica al terminar el procesamiento de entrada 
 
 | Componente | Función |
 | --- | --- |
-| **Menú CubiClient** | Pestañas Módulos/Apariencia, tarjetas con activación y engranaje, ajustes individuales |
+| **Menú CubiClient** | Pestañas Módulos/Apariencia/Rendimiento, tarjetas con activación y engranaje, ajustes individuales |
 | **FPS** | Indicador compacto de FPS sobre fondo translúcido opcional |
-| **CPS** | Contador izquierdo/derecho en una ventana móvil de un segundo |
-| **Keystrokes** | Teclas independientes con transición de color; respeta los controles asignados en Minecraft |
+| **Keystrokes + CPS** | Teclas con transición de color y CPS izquierdo/derecho bajo LMB/RMB, en una ventana móvil de un segundo; respeta los controles de Minecraft |
 | **Editor del HUD** | Arrastrar, alinear con centro y bordes, ajuste fino, escala y restablecimiento |
 | **Apariencia** | Tema Cubic Oscuro, acento global, marca CubiClient opcional y tecla del menú |
 | **Configuración** | JSON versionado, escritura atómica y copia de recuperación si está dañado |
+| **Optimización** | Culling conservador de partículas estándar, dibujo del HUD agrupado y resolución GUI cacheada |
+| **Diagnóstico** | Captura opcional de FPS, p95/p99, etapas del bucle y memoria/GC, con exportación JSON |
 | **Integración** | Marca en el menú principal, título de ventana y pantalla real de Minecraft |
 
-La base mantiene el renderizado del mundo de Minecraft 1.8.9. Las optimizaciones implementadas se centran en que la capa de Cubi tenga poco coste: consultas cacheadas, eventos sin asignaciones auxiliares, buffers de tamaño fijo y trabajo por tick separado del dibujo. No incluye OptiFine ni parches de optimización de chunks.
+La base conserva el motor de Minecraft 1.8.9 y añade descarte de partículas estándar fuera de cámara, además de reducir el trabajo propio del HUD. Los perfiles permiten ajustar el coste visual a distintos equipos. Consulta [rendimiento y perfiles](docs/PERFORMANCE.md) para conocer cada ajuste, restaurar valores anteriores y comparar capturas. Las ganancias de FPS requieren mediciones A/B; todavía no hay una comparación validada con Lunar.
 
 ## Requisitos
 
@@ -129,6 +131,8 @@ cubiclient/config.json
 
 Cada módulo conserva `enabled`, `key`, `x`, `y`, `scale`, `background`, `shadow` y `opacity`. `accent` y `watermark` son ajustes globales. Las posiciones están normalizadas dentro del espacio disponible de la pantalla. Las configuraciones del diseño inicial se migran una vez para conservar aproximadamente la esquina superior izquierda de cada widget al reducir sus dimensiones; los atajos y las escalas se conservan. «Restablecer» aplica la distribución compacta nueva.
 
+Los CPS forman parte de Keystrokes y comparten su activación, posición, escala y estilo. El HUD conserva las dimensiones anteriores del teclado. Las opciones guardadas del antiguo módulo `clicks` se conservan como datos heredados, pero ya no generan otro widget ni un atajo activo.
+
 La actualización al tema Cubic Oscuro registra `themeRevision` y selecciona el acento blanco una sola vez. Conserva las posiciones, las escalas, la opacidad, los atajos y el estado de los módulos. Si después eliges otro acento, se conserva al reiniciar.
 
 Los cambios se guardan al interactuar con los controles o cerrar el editor; los arrastres del HUD y del deslizador no escriben en cada fotograma. Si el JSON está dañado, se conserva una copia `config.json.invalid-<fecha>`.
@@ -155,9 +159,11 @@ run/smoke-replacement/screenshots/02-layout-editor.png
 run/smoke-replacement/screenshots/03-in-world.png
 ```
 
-El registro se escribe mientras la prueba está en marcha. Si se cancela o agota el tiempo, el script termina y recoge su proceso de juego; en Linux también configura el cierre del hijo si el proceso controlador desaparece. La regresión de teclado usa eventos LWJGL dentro de un mundo. Su ejecución gráfica quedó pendiente tras interrumpirse la prueba; las comprobaciones sin ventana sí se completaron.
+El registro se escribe mientras la prueba está en marcha. Si se cancela o agota el tiempo, el script termina y recoge su proceso de juego; en Linux también configura el cierre del hijo si el proceso controlador desaparece. La regresión de teclado usa eventos LWJGL dentro de un mundo.
 
-Para la interfaz actual se ejecutaron **154 comprobaciones Java y 4 pruebas Python sin abrir Minecraft**. Incluyen navegación, foco de atajos, regiones de clic, distintas resoluciones, espacio de la marca junto a la hotbar, migración del tema, métricas de Cantarell y empaquetado. Las capturas gráficas anteriores no representan esta interfaz; su revisión dentro de una partida queda pendiente.
+La entrega de rendimiento pasó **235 comprobaciones Java**, verificación JVM del jar final y **7 pruebas Python**. También pasó la prueba gráfica del HUD, perfiles, restauración, frustum de partículas y teclado en un mundo local. El estado detallado y las capturas disponibles se documentan en [verificación](docs/VERIFICATION.md).
+
+La integración posterior de CPS en Keystrokes pasó **236 comprobaciones Java**, enlace JVM y las **7 pruebas Python**; no se repitió la prueba gráfica para este ajuste.
 
 Consulta [verificación y rendimiento](docs/VERIFICATION.md) para el alcance real de las comprobaciones y [arquitectura](docs/ARCHITECTURE.md) para ampliar el cliente.
 
@@ -169,7 +175,8 @@ src/main/java/dev/cubi/
   bridge/       Adaptador cacheado de Minecraft 1.8.9 e instanciación de GuiScreen
   core/         Ciclo de vida, puntos de entrada, métricas y ventana de CPS
   config/       Persistencia y validación
-  module/       Contrato de HUD, registro y los tres módulos iniciales
+  module/       Contrato de HUD, registro, FPS y Keystrokes con CPS integrados
+  performance/  Perfiles, caché de resolución, visibilidad y captura de fotogramas
   ui/           Paleta, primitivas gráficas, Control Deck y editor
 src/build/java/ Generación de GuiScreen, atlas tipográfico/gráfico y hooks al compilar
 src/test/java/  Pruebas de lógica, bytecode e integración gráfica

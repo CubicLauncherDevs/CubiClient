@@ -35,7 +35,10 @@ public abstract class HudModule {
         try {
             GL11.glTranslatef(x, y, 0);
             GL11.glScalef(scale, scale, 1);
-            paint(client, client.ink, preview);
+            boolean batch = client.config.performance.hudBatching;
+            if (batch) client.ink.beginBatch();
+            try { paint(client, client.ink, preview); }
+            finally { if (batch) client.ink.endBatch(); }
         } finally { GL11.glPopMatrix(); }
     }
     protected void plate(Ink ink) throws Throwable {
