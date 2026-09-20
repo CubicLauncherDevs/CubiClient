@@ -1,10 +1,10 @@
-# Cubi Client · 0.2.1
+# CubiClient · 0.1.0
 
 **Cliente PvP para Minecraft Java 1.8.9 con HUD minimalista, tipografía suavizada y widgets personalizables.**
 
 Preparado para **Prism Launcher → Reemplazar Minecraft.jar**, sobre una instancia de **Minecraft 1.8.9 con Java 8**. El archivo listo para seleccionar es **`dist/replacement/minecraft.jar`**.
 
-### Corrección de teclado en 0.2.1
+### Corrección de teclado en 0.1.0
 
 La apertura con Shift derecho se aplica al terminar el procesamiento de entrada del tick. Así, Minecraft no reenvía la pulsación de apertura al menú recién creado como si fuera una orden de cierre. Mantener la tecla pulsada tampoco cierra el panel por repetición. Si otra pantalla se abre mientras tanto, se cancela la solicitud pendiente.
 
@@ -12,7 +12,7 @@ La apertura con Shift derecho se aplica al terminar el procesamiento de entrada 
 
 | Componente | Función |
 | --- | --- |
-| **Menú Cubi** | Tarjetas de módulos, ejemplos visuales, interruptores animados, atajos y ajustes de apariencia |
+| **Menú CubiClient** | Tarjetas de módulos, ejemplos visuales, interruptores animados, atajos y ajustes de apariencia |
 | **FPS** | Indicador compacto de FPS sobre fondo translúcido opcional |
 | **CPS** | Contador izquierdo/derecho en una ventana móvil de un segundo |
 | **Keystrokes** | Teclas independientes con transición de color; respeta los controles asignados en Minecraft |
@@ -58,7 +58,7 @@ El script descarga versiones fijas de las dependencias, la fuente Lato y el clie
 6. Inicia el juego. Prism descargará los recursos y bibliotecas normales de Minecraft que falten.
 7. Pulsa **Shift derecho** para abrir el menú Cubi, tanto en el menú principal como dentro de un mundo.
 
-**Selecciona el archivo de `dist/replacement/`.** El archivo más pequeño `dist/cubiclient-0.2.1.jar` es la biblioteca del formato de instalación anterior y no es un Minecraft.jar completo.
+**Selecciona el archivo de `dist/replacement/`.** El archivo más pequeño `dist/cubiclient-{version}.jar` es la biblioteca del formato de instalación anterior y no es un Minecraft.jar completo.
 
 Prism copia el archivo seleccionado dentro de la instancia. Después de recompilar una actualización, vuelve a usar **Reemplazar Minecraft.jar** para que Prism copie la versión nueva. La configuración se guarda en `cubiclient/config.json` dentro de la carpeta de Minecraft de esa instancia.
 
@@ -66,7 +66,7 @@ Para este formato se utiliza la entrada estándar `net.minecraft.client.main.Mai
 
 ### Formato de versión local
 
-El proyecto también conserva `tools/install.py` para el formato `versions/<id>/<id>.json` de otros launchers. Usa `dist/cubiclient-0.2.1.jar` como biblioteca con LaunchWrapper. Se compila con `python3 tools/build.py --test` y se instala con `python3 tools/install.py --minecraft-dir "/ruta/a/.minecraft"`. Ese script no configura instancias de Prism.
+El proyecto también conserva `tools/install.py` para el formato `versions/<id>/<id>.json` de otros launchers. Usa `dist/cubiclient-{version}.jar` como biblioteca con LaunchWrapper. Se compila con `python3 tools/build.py --test` y se instala con `python3 tools/install.py --minecraft-dir "/ruta/a/.minecraft"`. Ese script no configura instancias de Prism.
 
 
 ## Controles
