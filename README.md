@@ -1,8 +1,12 @@
+<p align="center">
+  <img src="docs/assets/cubiclient-logo.svg" alt="Logo de CubiClient" width="120" height="120" />
+</p>
+
 # CubiClient · 0.0.1
 
 **Cliente PvP para Minecraft Java 1.8.9 con HUD personalizable y apariencia basada en el tema Oscuro de CubicLauncher.**
 
-Preparado para **Prism Launcher → Reemplazar Minecraft.jar**, sobre una instancia de **Minecraft 1.8.9 con Java 8**. El archivo listo para seleccionar es **`dist/replacement/minecraft.jar`**.
+Preparado para **CubicLauncher → Reemplazar Minecraft.jar**, sobre una instancia de **Minecraft 1.8.9 con Java 8**. El archivo listo para seleccionar es **`dist/replacement/minecraft.jar`**.
 
 La versión de CubiClient se mantiene en **0.0.1**. Los cambios de interfaz y las correcciones no incrementan este número salvo indicación expresa.
 

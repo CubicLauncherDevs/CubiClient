@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">Logo de CubiClient</title>
+  <desc id="description">Cubo isométrico blanco sobre un fondo negro de esquinas redondeadas.</desc>
+
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#0c0c0c" stroke="#242424" stroke-width="1.5"/>
+
+  <g transform="translate(16 16) scale(1.5)">
+    <path d="M32 6 54 19 32 32 10 19Z" fill="#16161a"/>
+    <path d="M10 19 32 32 32 58 10 45Z" fill="#0f1010"/>
+    <path d="M32 32 54 19 54 45 32 58Z" fill="#111113"/>
+    <g stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M32 6 54 19V45L32 58 10 45V19Z"/>
+      <path d="M10 19 32 32 54 19M32 32V58"/>
+    </g>
+  </g>
+</svg>
