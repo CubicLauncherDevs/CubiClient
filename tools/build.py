@@ -54,9 +54,9 @@ def main():
         prepare += [str(original), str(patched)]
     subprocess.run(prepare, check=True)
     subprocess.run([java_tool("java"), "-Djava.awt.headless=true", "-cp", str(build_classes),
-                    "dev.cubi.build.UiAssets", str(classes), str(font_asset("Lato-Regular.ttf")),
-                    str(font_asset("Lato-Bold.ttf"))], check=True)
-    shutil.copyfile(font_asset("OFL.txt"), classes / "assets/cubi/ui/OFL-Lato.txt")
+                    "dev.cubi.build.UiAssets", str(classes), str(font_asset("Cantarell-Regular.ttf")),
+                    str(font_asset("Cantarell-Bold.ttf"))], check=True)
+    shutil.copyfile(font_asset("OFL.txt"), classes / "assets/cubi/ui/OFL-Cantarell.txt")
     distribution = ROOT / "dist" / ("cubiclient-" + VERSION + ".jar")
     distribution.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(distribution, "w", zipfile.ZIP_DEFLATED) as jar:
@@ -75,7 +75,7 @@ def main():
             shutil.rmtree(test_classes)
         test_cp = str(build_classes) + os.pathsep + tool_cp
         compile_sources(javac, sorted((ROOT / "src/test/java").rglob("*.java")), test_classes, test_cp)
-        subprocess.run([java_tool("java"), "-Xverify:all", "-cp", str(test_classes) + os.pathsep + test_cp,
+        subprocess.run([java_tool("java"), "-Djava.awt.headless=true", "-Xverify:all", "-cp", str(test_classes) + os.pathsep + test_cp,
                         "dev.cubi.tests.SelfTest", str(original)], check=True)
     print("Listo: " + str(distribution))
     if args.replacement:

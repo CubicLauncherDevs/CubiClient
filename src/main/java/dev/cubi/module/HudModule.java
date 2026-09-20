@@ -3,6 +3,7 @@ package dev.cubi.module;
 import dev.cubi.config.ClientConfig.ModuleState;
 import dev.cubi.core.CubiClient;
 import dev.cubi.ui.Ink;
+import dev.cubi.ui.Theme;
 import org.lwjgl.opengl.GL11;
 
 public abstract class HudModule {
@@ -39,17 +40,18 @@ public abstract class HudModule {
     }
     protected void plate(Ink ink) throws Throwable {
         if (state.background) {
-            if (state.shadow) ink.round(0, 1, width, height, 5, 0x26000000);
-            ink.round(0, 0, width, height, 5, Ink.alpha(0xFF0C0E13, state.opacity));
+            if (state.shadow) ink.round(0, 1, width, height, Theme.HUD_RADIUS, Theme.HUD_SHADOW);
+            ink.round(0, 0, width, height, Theme.HUD_RADIUS, Ink.alpha(Theme.BACKGROUND, state.opacity));
+            ink.border(0, 0, width, height, Theme.HUD_RADIUS, Ink.alpha(Theme.BORDER_HOVER, state.opacity));
         }
     }
     protected void metric(Ink ink, String value, String unit) throws Throwable {
         plate(ink);
         float valueWidth = ink.width(value, 11, true);
         float x = (width - valueWidth - 5 - ink.width(unit, 9, false)) / 2;
-        if (state.shadow) ink.text(value, x + 0.6f, 7.6f, 11, true, 0x66000000);
+        if (state.shadow) ink.text(value, x + 0.6f, 7.6f, 11, true, Theme.TEXT_SHADOW);
         ink.text(value, x, 7, 11, true, Ink.WHITE);
-        if (state.shadow) ink.text(unit, x + valueWidth + 5.6f, 8.6f, 9, false, 0x66000000);
-        ink.text(unit, x + valueWidth + 5, 8, 9, false, 0xFFCDD3DF);
+        if (state.shadow) ink.text(unit, x + valueWidth + 5.6f, 8.6f, 9, false, Theme.TEXT_SHADOW);
+        ink.text(unit, x + valueWidth + 5, 8, 9, false, Theme.SECONDARY);
     }
 }

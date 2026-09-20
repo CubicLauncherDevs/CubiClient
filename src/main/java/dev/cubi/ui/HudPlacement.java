@@ -18,4 +18,9 @@ public final class HudPlacement {
         if (Math.abs(position + size - (screen - 12)) < 0.6f) return screen - 12;
         return -1;
     }
+
+    /** Lift the watermark above the hotbar when its full name cannot fit to the left. */
+    public static int watermarkY(int width, int height, float rightEdge) {
+        return Math.max(0, height - (rightEdge + 6 >= width / 2f - 91 ? 38 : 23));
+    }
 }

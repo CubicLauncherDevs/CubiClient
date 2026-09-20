@@ -3,6 +3,7 @@ package dev.cubi.module;
 import dev.cubi.core.CubiClient;
 import dev.cubi.ui.Ink;
 import dev.cubi.ui.Motion;
+import dev.cubi.ui.Theme;
 import org.lwjgl.input.Mouse;
 
 public final class KeysModule extends HudModule {
@@ -33,9 +34,11 @@ public final class KeysModule extends HudModule {
 
     private void key(CubiClient client, Ink ink, int index, String label, int x, int y, int width, int height, boolean pressed) throws Throwable {
         float amount = presses[index].to(pressed ? 1 : 0);
-        int idle = Ink.alpha(0xFF0C0E13, state.background ? state.opacity : 0);
-        if (state.shadow && state.background) ink.round(x, y + 1, width, height, 4, 0x26000000);
-        ink.round(x, y, width, height, 4, Ink.mix(idle, client.accent(), amount));
+        int idle = Ink.alpha(Theme.BACKGROUND, state.background ? state.opacity : 0);
+        if (state.shadow && state.background) ink.round(x, y + 1, width, height, Theme.HUD_RADIUS, Theme.HUD_SHADOW);
+        ink.round(x, y, width, height, Theme.HUD_RADIUS, Ink.mix(idle, client.accent(), amount));
+        int idleBorder = Ink.alpha(Theme.BORDER_HOVER, state.background ? state.opacity : 0);
+        ink.border(x, y, width, height, Theme.HUD_RADIUS, Ink.mix(idleBorder, client.accent(), amount));
         int text = Ink.mix(Ink.WHITE, Ink.DARK, amount);
         if (index == 4 && label.equals("SPACE")) {
             ink.round(x + 28, y + 8, 26, 1.5f, 0.75f, text);
@@ -45,7 +48,7 @@ public final class KeysModule extends HudModule {
             if (labelWidth > width - 5) size *= (width - 5) / labelWidth;
             float left = x + (width - ink.width(label, size, true)) / 2;
             float top = y + (height - size) / 2;
-            if (state.shadow && amount < 0.1f) ink.text(label, left + 0.5f, top + 0.6f, size, true, 0x77000000);
+            if (state.shadow && amount < 0.1f) ink.text(label, left + 0.5f, top + 0.6f, size, true, Theme.TEXT_SHADOW);
             ink.text(label, left, top, size, true, text);
         }
     }

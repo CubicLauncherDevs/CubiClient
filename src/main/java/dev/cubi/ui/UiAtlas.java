@@ -59,6 +59,10 @@ final class UiAtlas {
     }
 
     void text(String value, float x, float y, float size, boolean bold, int color) throws Throwable {
+        text(value, x, y, size, bold, color, 0);
+    }
+
+    void text(String value, float x, float y, float size, boolean bold, int color, float tracking) throws Throwable {
         int face = bold ? 1 : 0;
         float scale = size / 36;
         game.textureInk(texture, color);
@@ -69,12 +73,20 @@ final class UiAtlas {
                 int cell = face * 224 + glyph - 32;
                 quad(x - 4 * scale, y - top[face] * scale, 64 * scale, 64 * scale,
                         cell % 32 * 64, cell / 32 * 64, 64, 64);
-                x += advances[face][glyph - 32] * scale;
+                x += advances[face][glyph - 32] * scale + tracking;
             }
         } finally { GL11.glEnd(); game.finishInk(); }
     }
 
     void rounded(float x, float y, float width, float height, float radius, int color) throws Throwable {
+        patch(x, y, width, height, radius, color, 0);
+    }
+
+    void border(float x, float y, float width, float height, float radius, int color) throws Throwable {
+        patch(x, y, width, height, radius, color, 384);
+    }
+
+    private void patch(float x, float y, float width, float height, float radius, int color, int sourceX) throws Throwable {
         float r = Math.min(radius, Math.min(width, height) / 2);
         if (width <= 0 || height <= 0 || (color >>> 24) == 0) return;
         game.textureInk(texture, color);
@@ -84,7 +96,7 @@ final class UiAtlas {
                 float dx = col == 0 ? x : col == 1 ? x + r : x + width - r;
                 float dy = row == 0 ? y : row == 1 ? y + r : y + height - r;
                 float w = col == 1 ? width - 2 * r : r, h = row == 1 ? height - 2 * r : r;
-                quad(dx, dy, w, h, col == 0 ? 0 : col == 1 ? 16 : 48,
+                quad(dx, dy, w, h, sourceX + (col == 0 ? 0 : col == 1 ? 16 : 48),
                         960 + (row == 0 ? 0 : row == 1 ? 16 : 48), col == 1 ? 32 : 16, row == 1 ? 32 : 16);
             }
         } finally { GL11.glEnd(); game.finishInk(); }

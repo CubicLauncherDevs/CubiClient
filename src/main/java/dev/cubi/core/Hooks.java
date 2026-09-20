@@ -1,6 +1,7 @@
 package dev.cubi.core;
 
 import dev.cubi.ui.Ink;
+import dev.cubi.ui.Theme;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -67,9 +68,10 @@ public final class Hooks {
         try {
             CubiClient c = client();
             if (c == null) return;
-            c.ink.round(10, 10, 154, 37, 8, 0xBB111319);
+            c.ink.round(10, 10, 154, 37, Theme.CARD_RADIUS, Ink.alpha(Theme.BACKGROUND, 0.75f));
+            c.ink.border(10, 10, 154, 37, Theme.CARD_RADIUS, Theme.BORDER);
             c.ink.icon(0, 19, 19, 19, c.accent());
-            c.ink.text("cubi", 46, 17, 14, true, Ink.WHITE);
+            c.ink.text(ClientIdentity.NAME, 46, 17, 14, true, Ink.WHITE);
             c.ink.small(Keyboard.getKeyName(c.config.menuKey) + "  /  Personalizar", 46, 34, Ink.MUTED);
             c.game.white();
         } catch (Throwable error) { fail(error); }

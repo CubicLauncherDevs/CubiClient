@@ -2,6 +2,7 @@
 import unittest
 
 from install import make_descriptor
+from common import VERSION
 
 
 class DescriptorTests(unittest.TestCase):
@@ -12,7 +13,7 @@ class DescriptorTests(unittest.TestCase):
                 "assetIndex": {"id": "1.8", "sha1": "unchanged"},
                 "downloads": {"client": {"sha1": "original"}},
                 "logging": {"client": {"argument": "keep-me"}}}
-        own = {"name": "dev.cubi:cubiclient:0.1.0"}
+        own = {"name": "dev.cubi:cubiclient:" + VERSION}
         descriptor = make_descriptor(base, own, [{"name": "net.minecraft:launchwrapper:1.12"}])
         self.assertEqual(descriptor["mainClass"], "net.minecraft.launchwrapper.Launch")
         self.assertEqual(descriptor["libraries"][0], own)

@@ -29,7 +29,7 @@ def validate_replacement(original, output):
         if result.testzip() is not None:
             raise ValueError("El jar de reemplazo tiene datos corruptos")
         required = (MAIN_CLASS, SCREEN_CLASS, "dev/cubi/core/Hooks.class", "dev/cubi/bridge/Game189.class")
-        required += ("assets/cubi/ui/atlas.png", "assets/cubi/ui/atlas.bin", "assets/cubi/ui/OFL-Lato.txt")
+        required += ("assets/cubi/ui/atlas.png", "assets/cubi/ui/atlas.bin", "assets/cubi/ui/OFL-Cantarell.txt")
         for name in required:
             if name not in names:
                 raise ValueError("Falta una clase necesaria: " + name)

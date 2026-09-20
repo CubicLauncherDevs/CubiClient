@@ -1,5 +1,7 @@
 # Arquitectura de CubiClient
 
+Versión del cliente: **0.0.1**. Las revisiones internas de configuración y tema son independientes de este número.
+
 ## Arranque
 
 ### Jar de reemplazo para Prism
@@ -49,7 +51,7 @@ Con el jar de reemplazo, `Game189` usa el classloader que cargó Cubi y Minecraf
 
 `Ink` usa el atlas de `UiAtlas` para tipografía, iconos y superficies redondeadas. Los rectángulos simples usan `Gui.drawRect`. La selección de texturas, color, blending y alpha pasa por handles cacheados de `GlStateManager`, para mantener sincronizada su caché. Las transformaciones y los bloques de dibujo se equilibran con `try/finally`; al terminar se restablecen alpha, blending y color.
 
-`UiAssets` rasteriza Lato Regular/Bold a 36 píxeles y los iconos originales de Cubi durante la compilación. Produce `atlas.png` de 2048 × 1024, métricas binarias y una copia de la licencia OFL. El runtime carga una sola textura (8 MiB RGBA), reutilizada durante toda la sesión. No genera glifos, imágenes o geometría curva por fotograma. Los bordes usan nueve secciones de una misma máscara y las animaciones usan tiempo transcurrido, no incrementos por FPS.
+`UiAssets` rasteriza Cantarell Regular/Bold a 36 píxeles y los iconos originales de Cubi durante la compilación. Comprueba la familia de la fuente y que los glifos quepan en sus celdas. Produce `atlas.png` de 2048 × 1024, métricas binarias y una copia de la licencia OFL. El runtime carga una sola textura (8 MiB RGBA), reutilizada durante toda la sesión. No genera glifos, imágenes o geometría curva por fotograma. Los fondos y los bordes usan máscaras de nueve secciones; la máscara del borde tiene un centro transparente para no rellenar de nuevo los widgets translúcidos. Las animaciones usan tiempo transcurrido, no incrementos por FPS.
 
 ## Ciclo de vida y módulos
 
@@ -75,17 +77,35 @@ El contrato común se encarga de escala, posición, persistencia y representaci�
 
 ## Identidad visual
 
-- **Grafito:** fondos `#111319` y `#191C24`.
-- **Acentos:** menta `#A0ECD3`, azul, lavanda y melocotón.
-- **Marca:** cubo isométrico de trazo fino y palabra «cubi».
-- **Jerarquía:** títulos breves, datos compactos y controles alineados.
-- **Tipografía:** Lato Regular y Bold, suavizada y precalculada.
-- **Efectos:** transparencia regulable, esquinas redondeadas, sombra discreta y transiciones de teclas/interruptores.
+- **Referencia:** tema Oscuro de CubicLauncher, revisión `c7b6ecb408472964158a3757b7fd7cabb4af8e42`.
+- **Fondos:** `#0C0C0C`, `#0F1010` y tarjetas `#16161A`.
+- **Bordes:** normal `#242424`, hover `#383838` y selección `#777777`.
+- **Texto:** principal `#D8D8D8` y secundario `#909090`.
+- **Acento:** blanco `#FFFFFF` por defecto; azul, lavanda y melocotón opcionales.
+- **Marca:** cubo isométrico de trazo fino y nombre completo **CubiClient**, centralizado en `ClientIdentity`.
+- **Jerarquía:** encabezados en mayúsculas con espaciado entre letras, separadores finos y controles alineados.
+- **Tipografía:** Cantarell Regular y Bold, suavizada y precalculada.
+- **Controles:** botones blancos o secundarios con borde, casillas de verificación y deslizadores con tirador cuadrado.
+- **Efectos:** transparencia regulable, radios discretos, sombra suave y transiciones de teclas/casillas.
 
-El panel usa un lienzo lógico 520 × 352 que se adapta a la pantalla. Las vistas previas muestran valores de ejemplo para poder valorar el diseño incluso fuera de un mundo. Los widgets usan su propia escala; el editor opera en coordenadas GUI de Minecraft. `HudPlacement` realiza el ajuste a centro y márgenes de 12 píxeles y mantiene la posición dentro de pantalla. Las guías aparecen al arrastrar; Shift desactiva el magnetismo.
+`Theme` centraliza la paleta y las dimensiones de los bordes/radios. `Ink` adapta esos valores a primitivas compartidas por la HUD, el menú y el editor. No se consulta la configuración de CubicLauncher durante el juego: es un tema integrado en CubiClient.
+
+El panel usa un lienzo lógico **560 × 362** que se adapta a la pantalla. Las vistas previas muestran valores de ejemplo para poder valorar el diseño incluso fuera de un mundo. Los widgets usan su propia escala; el editor opera en coordenadas GUI de Minecraft. `HudPlacement` realiza el ajuste a centro y márgenes de 12 píxeles y mantiene la posición dentro de pantalla. Las guías aparecen al arrastrar; Shift desactiva el magnetismo.
+
+### Navegación y distribución
+
+- `DeckState` gestiona Módulos, Apariencia, Ajustes y Editor, la selección y el foco de captura de teclas. No depende de Minecraft ni de OpenGL.
+- `DeckLayout` comparte dimensiones y regiones de clic entre dibujo, interacción y pruebas. La activación de una tarjeta tiene un área distinta de su engranaje.
+- `ControlDeck` dibuja y despacha las acciones de la vista activa. Los ajustes del módulo van en una columna junto a su previsualización; los globales pertenecen a Apariencia.
+- Esc cancela primero una captura, vuelve desde Ajustes a Módulos o desde Editor a su origen. La tecla del menú cierra toda la interfaz cuando no se está capturando un atajo.
+- Al navegar se terminan los arrastres y se guardan los cambios pendientes. Las posiciones y opciones existentes no se reinician al cambiar de vista.
+
+La marca del HUD mide el nombre completo con las métricas del atlas. Si no cabe junto a la hotbar, `HudPlacement.watermarkY` la coloca por encima; con espacio suficiente conserva la esquina inferior izquierda.
 
 ## Persistencia y fallos
 
 `ClientConfig` usa esquema 1 y añade campos compatibles con las configuraciones anteriores. Valida números finitos, posiciones, escala, opacidad, acento y códigos de tecla. La revisión de distribución 2 adapta las coordenadas guardadas a las dimensiones compactas una sola vez. Guarda a un temporal antes de reemplazar el JSON; si el sistema no permite movimientos atómicos, usa un reemplazo normal. Las configuraciones inválidas se copian antes de recuperar valores por defecto.
+
+`themeRevision` permite aplicar el acento blanco del nuevo tema una sola vez. La migración no modifica la distribución ni las opciones de los módulos y marca la configuración como pendiente de guardar; las personalizaciones posteriores de acento se respetan.
 
 Las excepciones en los hooks se registran una vez y desactivan la capa de Cubi para evitar un bucle de errores por fotograma. Un fallo durante la pantalla personalizada intenta volver a la pantalla anterior. Los errores de escritura aparecen también en el estado del panel.

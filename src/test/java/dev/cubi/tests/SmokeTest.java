@@ -1,10 +1,13 @@
 package dev.cubi.tests;
 
 import dev.cubi.core.CubiClient;
+import dev.cubi.core.ClientIdentity;
 import dev.cubi.core.Hooks;
 import dev.cubi.bridge.Game189;
 import dev.cubi.config.ClientConfig;
 import dev.cubi.ui.ControlDeck;
+import dev.cubi.ui.DeckLayout;
+import dev.cubi.ui.DeckState;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -81,42 +84,68 @@ public final class SmokeTest {
         onGame(new Action() {
             @Override public void run() throws Throwable {
                 require(client.game.screen() == client.controlScreen, "Generated GuiScreen opens");
+                require(Display.getTitle().startsWith(ClientIdentity.NAME), "Game window shows the full client name");
+                requirePage(DeckState.Page.MODULES, "Screen opens on the module browser");
                 require(client.game.movementName(0).equals("W") && client.game.movementName(1).equals("A")
                         && client.game.movementName(2).equals("S") && client.game.movementName(3).equals("D"), "Movement mappings match vanilla controls");
                 screenshot("01-control-deck.png");
                 boolean original = client.modules.all[0].state.enabled;
-                click(144, 133);
+                click(DeckLayout.TOGGLES[0]);
                 require(client.modules.all[0].state.enabled != original, "Module toggle");
-                click(144, 133);
+                requirePage(DeckState.Page.MODULES, "Toggling a module does not open its settings");
+                click(DeckLayout.TOGGLES[0]);
+                click(DeckLayout.SETTINGS[0]);
+                requirePage(DeckState.Page.SETTINGS, "Gear opens module settings");
+            }
+        });
+        Thread.sleep(600);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                screenshot("05-module-settings.png");
                 float scale = client.modules.all[0].state.scale;
-                click(114, 303);
+                click(DeckLayout.SCALE_PLUS);
                 require(client.modules.all[0].state.scale > scale, "Scale control");
-                click(46, 303);
-                click(432, 253);
+                click(DeckLayout.SCALE_MINUS);
+                click(DeckLayout.MODULE_BIND);
                 ControlDeck.type('g', Keyboard.KEY_G);
                 require(client.modules.all[0].state.key == Keyboard.KEY_G, "Binding capture");
-                click(432, 253);
+                click(DeckLayout.MODULE_BIND);
                 ControlDeck.type('\b', Keyboard.KEY_BACK);
                 require(client.modules.all[0].state.key == 0, "Binding clear");
                 boolean background = client.modules.all[0].state.background;
-                click(307, 301);
+                click(DeckLayout.BACKGROUND);
                 require(client.modules.all[0].state.background != background, "Background control");
-                click(307, 301);
+                click(DeckLayout.BACKGROUND);
                 boolean shadow = client.modules.all[0].state.shadow;
-                click(362, 301);
+                click(DeckLayout.SHADOW);
                 require(client.modules.all[0].state.shadow != shadow, "Text shadow control");
-                click(362, 301);
-                click(246, 303);
+                click(DeckLayout.SHADOW);
+                click(DeckLayout.OPACITY.x + DeckLayout.OPACITY.w - 10, DeckLayout.OPACITY.centerY());
                 ControlDeck.release(0, 0, 0);
                 require(client.modules.all[0].state.opacity > 0.65f, "Opacity slider");
-                click(435, 302);
+                click(DeckLayout.APPEARANCE_TAB);
+                requirePage(DeckState.Page.APPEARANCE, "Global settings are on their own tab");
+            }
+        });
+        Thread.sleep(600);
+        onGame(new Action() {
+            @Override public void run() throws Throwable {
+                screenshot("06-appearance.png");
+                boolean watermark = client.config.watermark;
+                click(DeckLayout.WATERMARK);
+                require(client.config.watermark != watermark, "Full-name watermark can be disabled");
+                click(DeckLayout.WATERMARK);
+                click(DeckLayout.ACCENTS[1]);
                 require(client.config.accent == 1, "Accent swatch");
                 ClientConfig persisted = ClientConfig.load(client.game.directory.toPath().resolve("cubiclient/config.json"));
                 require(persisted.accent == 1 && persisted.state("frames").opacity > 0.65f, "Visual settings persist");
-                click(417, 302);
+                click(DeckLayout.ACCENTS[0]);
                 client.modules.all[0].state.opacity = 0.48f;
                 client.config.changed();
-                click(410, 34);
+                click(DeckLayout.MODULES_TAB);
+                click(DeckLayout.SETTINGS[0]);
+                click(DeckLayout.EDIT);
+                requirePage(DeckState.Page.EDITOR, "Editor opens from module settings");
                 float x = client.modules.all[0].state.x;
                 ControlDeck.type('\0', Keyboard.KEY_RIGHT);
                 require(client.modules.all[0].state.x > x, "Editor movement");
@@ -128,7 +157,10 @@ public final class SmokeTest {
                 require(client.controlScreen != null && client.game.screen() == client.controlScreen, "Editor remains open");
                 screenshot("02-layout-editor.png");
                 ControlDeck.type('\0', Keyboard.KEY_ESCAPE);
+                requirePage(DeckState.Page.SETTINGS, "Editor returns to the page it came from");
                 client.modules.resetLayout(client);
+                ControlDeck.type('\0', Keyboard.KEY_ESCAPE);
+                requirePage(DeckState.Page.MODULES, "Escape from settings returns to modules");
                 ControlDeck.type('\0', Keyboard.KEY_ESCAPE);
                 require(client.game.screen() != client.controlScreen, "Screen closes to previous menu");
                 require(!failed.getBoolean(null), "No hook errors during rendering");
@@ -229,7 +261,8 @@ public final class SmokeTest {
         requireMenuOpen("Menu can be reopened in the same world");
         sendKey(Keyboard.KEY_RSHIFT, false, false);
 
-        click(72, 340); // Capture a new menu shortcut through the real screen input path.
+        click(DeckLayout.APPEARANCE_TAB);
+        click(DeckLayout.MENU_BIND); // Capture a new menu shortcut through the real screen input path.
         sendKey(Keyboard.KEY_RCONTROL, true, false);
         require(client.config.menuKey == Keyboard.KEY_RCONTROL, "Menu shortcut can be rebound");
         requireMenuOpen("Capturing the menu key does not immediately close it");
@@ -247,7 +280,8 @@ public final class SmokeTest {
         int oldBinding = client.modules.all[0].state.key;
         boolean oldEnabled = client.modules.all[0].state.enabled;
         try {
-            click(432, 253);
+            click(DeckLayout.SETTINGS[0]);
+            click(DeckLayout.MODULE_BIND);
             sendKey(Keyboard.KEY_G, true, false);
             require(client.modules.all[0].state.key == Keyboard.KEY_G, "Module shortcut captures a native event");
             require(client.modules.all[0].state.enabled == oldEnabled, "Binding capture does not toggle the module");
@@ -279,10 +313,18 @@ public final class SmokeTest {
     }
 
     private static void click(int x, int y) {
-        float zoom = Math.min(1, Math.min((client.game.width - 16f) / 520, (client.game.height - 16f) / 352));
-        int px = Math.round((client.game.width - 520 * zoom) / 2 + x * zoom);
-        int py = Math.round((client.game.height - 352 * zoom) / 2 + y * zoom);
+        float zoom = DeckLayout.zoom(client.game.width, client.game.height);
+        int px = Math.round(DeckLayout.originX(client.game.width, zoom) + x * zoom);
+        int py = Math.round(DeckLayout.originY(client.game.height, zoom) + y * zoom);
         ControlDeck.click(px, py, 0);
+    }
+
+    private static void click(DeckLayout.Rect rect) { click(rect.centerX(), rect.centerY()); }
+
+    private static void requirePage(DeckState.Page expected, String message) throws Exception {
+        Field field = ControlDeck.class.getDeclaredField("nav");
+        field.setAccessible(true);
+        require(((DeckState) field.get(null)).page() == expected, message);
     }
 
     private static void screenshot(String name) throws Exception {

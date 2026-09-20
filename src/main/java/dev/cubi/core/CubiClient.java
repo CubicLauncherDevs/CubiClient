@@ -30,7 +30,7 @@ public final class CubiClient {
         modules = new ModuleRegistry(this);
         modules.migrateLayout(this);
         config.save();
-        Display.setTitle("Cubi Client | 1.8.9");
+        Display.setTitle(ClientIdentity.NAME + " | " + ClientIdentity.MINECRAFT);
         System.out.println("[Cubi] Interfaz renovada lista. Abre el menú con tu tecla configurada (RSHIFT por defecto).");
     }
 

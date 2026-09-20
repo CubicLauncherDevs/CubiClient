@@ -2,6 +2,7 @@ package dev.cubi.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dev.cubi.ui.Theme;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,7 @@ public final class ClientConfig {
     public int menuKey = 54; // LWJGL RSHIFT
     public boolean layoutInitialized;
     public int layoutRevision;
+    public int themeRevision;
     public int accent;
     public boolean watermark = true;
     public Map<String, ModuleState> modules = new LinkedHashMap<String, ModuleState>();
@@ -71,6 +73,13 @@ public final class ClientConfig {
             }
         }
         if (config.menuKey <= 1 || config.menuKey > 255) config.menuKey = 54;
+        // Apply the requested official preset once without moving widgets or resetting binds.
+        // Subsequent accent customizations remain user choices and survive restarts.
+        if (config.themeRevision < Theme.REVISION) {
+            config.accent = 0;
+            config.themeRevision = Theme.REVISION;
+            config.dirty = true;
+        }
         if (config.accent < 0 || config.accent > 3) config.accent = 0;
         config.file = file;
         return config;

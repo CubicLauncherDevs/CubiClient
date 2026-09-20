@@ -8,7 +8,8 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".cache"
-VERSION = "0.2.1"
+# Keep the client at this version unless the user explicitly requests a change.
+VERSION = "0.0.1"
 VERSION_ID = "CubiClient-1.8.9"
 LIBRARIES = {
     "launchwrapper": (
@@ -34,15 +35,15 @@ LIBRARIES = {
 }
 
 FONT_ASSETS = {
-    "Lato-Regular.ttf": "29eb192629b0bbb41a7b7f49ab2aec82d4261921",
-    "Lato-Bold.ttf": "a3a53a436baaf6dc2e7a05f05866a761c214692b",
-    "OFL.txt": "76897b37e127e2332a1a79aab2e0d6f30ccdc47a",
+    "Cantarell-Regular.ttf": "470d77769d8bd365c0563bc10f86d18476c9fdf2",
+    "Cantarell-Bold.ttf": "337f7d9a71137193868e1b1082dda84b984d697a",
+    "OFL.txt": "1aa9336ab7fc798eae7b0e60542b38a411c9a4c4",
 }
 
 
 def font_asset(name):
-    return download("https://raw.githubusercontent.com/google/fonts/main/ofl/lato/" + name,
-                    CACHE / "fonts" / name, FONT_ASSETS[name])
+    return download("https://raw.githubusercontent.com/google/fonts/main/ofl/cantarell/" + name,
+                    CACHE / "fonts/cantarell" / name, FONT_ASSETS[name])
 
 
 def sha1(path):
@@ -61,7 +62,7 @@ def download(url, destination, expected=None):
     temporary = destination.with_suffix(destination.suffix + ".part")
     for attempt in range(3):
         try:
-            request = urllib.request.Request(url, headers={"User-Agent": "CubiClient/0.1"})
+            request = urllib.request.Request(url, headers={"User-Agent": "CubiClient/" + VERSION})
             with urllib.request.urlopen(request, timeout=60) as response, temporary.open("wb") as out:
                 while True:
                     block = response.read(1024 * 1024)

@@ -1,6 +1,9 @@
 package dev.cubi.module;
 
 import dev.cubi.core.CubiClient;
+import dev.cubi.core.ClientIdentity;
+import dev.cubi.ui.HudPlacement;
+import dev.cubi.ui.Theme;
 
 /** Typed lifecycle dispatch. Stable array: no stream, reflection or event allocation. */
 public final class ModuleRegistry {
@@ -16,8 +19,10 @@ public final class ModuleRegistry {
     public void render(CubiClient client) throws Throwable {
         for (HudModule module : all) if (module.state.enabled) module.render(client, false);
         if (client.config.watermark) {
-            client.ink.icon(0, 12, client.game.height - 23, 13, client.accent());
-            client.ink.text("cubi", 29, client.game.height - 21, 11, true, 0xDDFFFFFF);
+            float right = 29 + client.ink.width(ClientIdentity.NAME, 10, true);
+            int y = HudPlacement.watermarkY(client.game.width, client.game.height, right);
+            client.ink.icon(0, 12, y, 13, client.accent());
+            client.ink.text(ClientIdentity.NAME, 29, y + 2, 10, true, Theme.TEXT);
         }
     }
     public void resetLayout(CubiClient client) {

@@ -1,5 +1,7 @@
 # Verificación y rendimiento
 
+Versión del cliente: **0.0.1**. Los apartados históricos describen etapas de desarrollo, no incrementos de versión.
+
 ## Ejecutado en este entorno
 
 Entorno: Linux, OpenJDK **1.8.0_504**, Python 3 y sesión gráfica OpenGL disponible.
@@ -9,7 +11,9 @@ Entorno: Linux, OpenJDK **1.8.0_504**, Python 3 y sesión gráfica OpenGL dispon
 `python3 tools/build.py --replacement --test`
 
 - Compilación con Java 8 y `-Xlint:all`.
-- **92 comprobaciones**: ventana móvil de CPS, límites y saturación del buffer, persistencia de opciones visuales, recuperación de JSON, lectura de configuraciones antiguas, ajuste a centro/márgenes, límites de pantalla, argumentos de arranque, bindings del juego/estado gráfico y apertura diferida del menú.
+- **154 comprobaciones** sin ventana: ventana móvil de CPS, límites y saturación del buffer, persistencia de opciones visuales, recuperación de JSON, lectura y migración de configuraciones antiguas, ajuste a centro/márgenes, límites de pantalla, argumentos de arranque, bindings del juego/estado gráfico y apertura diferida del menú.
+- `DeckTest` verifica navegación, cancelación de captura, regreso del editor a su origen, regiones de clic independientes, límites del deslizador y transformación de coordenadas a 320×240, 426×240, 854×480 y 1920×1080. Con las métricas reales de Cantarell comprueba que el nombre CubiClient quepa en la cabecera y que su marca no invada la hotbar.
+- Validación del atlas Cantarell, sus métricas, la licencia incluida y la máscara de borde hueca. La migración del tema se verifica tanto al actualizar como al reiniciar después de personalizar el acento.
 - La regresión sin ventana comprueba que el manejador de teclado del código compilado encole la apertura, que no abra directamente una pantalla y que el tick consuma esa solicitud. También verifica activación única, cancelación por cambio de pantalla y ausencia de reaperturas tardías.
 - Validación de los tres transformadores sobre el cliente original **1.8.9** descargado de Mojang.
 - Análisis de instrucciones y tipos con ASM `CheckClassAdapter`.
@@ -21,7 +25,7 @@ Generado: **`dist/replacement/minecraft.jar`**.
 
 - Verificación del CRC y de la ausencia de entradas duplicadas.
 - Conservación byte a byte de las clases y recursos originales, salvo las tres clases parcheadas y metadatos de firma/índice.
-- Inclusión de los hooks, la pantalla y los assets gráficos preparados al compilar, incluida la licencia de Lato.
+- Inclusión de los hooks, la pantalla y los assets gráficos preparados al compilar, incluida la licencia de Cantarell.
 - Entrada `net.minecraft.client.main.Main` y ausencia de dependencias de ejecución de LaunchWrapper/ASM en Cubi.
 - Exclusión de clases de pruebas, herramientas de compilación y el tweaker del archivo final.
 
@@ -35,7 +39,7 @@ Generado: **`dist/replacement/minecraft.jar`**.
 
 También se ejecutó el instalador en **`build/test-minecraft/`**, generando el descriptor, el jar original y las tres bibliotecas adicionales. Esa carpeta es una instalación de pruebas, separada de la del usuario.
 
-### Integración gráfica real (última ejecución completa: 0.2)
+### Integración gráfica real (última ejecución completa: diseño anterior)
 
 `python3 tools/smoke.py --replacement`
 
@@ -53,9 +57,13 @@ Se arrancó el **jar de reemplazo final** mediante la entrada estándar de Minec
 
 Las acciones de UI se envían programáticamente al hilo del juego. El proceso de prueba aísla sus colas LWJGL de los eventos físicos del escritorio, para evitar que un clic o Esc interfieran con la secuencia. Esto solamente existe en `SmokeTest`, que no se empaqueta en el jar final. Estas pruebas no sustituyen una sesión manual con todos los dispositivos de entrada.
 
-Los resultados y capturas de la interfaz 0.2 están en `run/smoke-replacement/`. El formato de biblioteca también dispone de `python3 tools/smoke.py`; su última ejecución documentada antes de este rediseño comprobó la adaptación del classloader y la pantalla pregenerada.
+Los resultados y capturas del diseño anterior están en `run/smoke-replacement/`. El formato de biblioteca también dispone de `python3 tools/smoke.py`; su última ejecución documentada antes de este rediseño comprobó la adaptación del classloader y la pantalla pregenerada.
 
-**Estado de 0.2.1:** se añadió una regresión que introduce eventos en la cola de LWJGL y deja que `Minecraft.runTick` los procese: abrir en partida, mantener/soltar/cerrar, reasignar la tecla, usar atajos de módulos y respetar el chat. El intento gráfico se interrumpió y la instancia de pruebas que quedó abierta se cerró. No se volvió a abrir una ventana después de esa interrupción. La compilación, las 92 comprobaciones sin ventana, las 4 pruebas Python y la validación del jar final sí pasaron; queda pendiente completar la nueva regresión gráfica.
+**Etapa de corrección del teclado:** se añadió una regresión que introduce eventos en la cola de LWJGL y deja que `Minecraft.runTick` los procese: abrir en partida, mantener/soltar/cerrar, reasignar la tecla, usar atajos de módulos y respetar el chat. El intento gráfico se interrumpió y la instancia de pruebas que quedó abierta se cerró. No se volvió a abrir una ventana después de esa interrupción. La compilación, las 92 comprobaciones sin ventana, las 4 pruebas Python y la validación del jar final sí pasaron; queda pendiente completar la nueva regresión gráfica.
+
+**Etapa del tema Cubic Oscuro:** el tema se compiló y empaquetó con Java 8. Pasaron las 104 comprobaciones Java en modo headless, las 4 pruebas Python y la validación del jar completo. No se abrió Minecraft para esta actualización; la apariencia de Cantarell, los controles nuevos y los bordes del HUD requieren todavía revisión dentro del juego. Las capturas anteriores corresponden al diseño anterior.
+
+**Estado actual (0.0.1):** la interfaz separa Módulos, Apariencia, Ajustes y Editor y muestra el nombre completo CubiClient. Pasaron las 154 comprobaciones Java sin ventana, las 4 pruebas Python y la validación del jar final. Se adaptó el smoke test a las nuevas regiones compartidas y se añadieron capturas de ajustes/apariencia para una ejecución futura, pero no se abrió Minecraft. La revisión visual y la regresión de teclado en partida siguen pendientes.
 
 Estas pruebas descargan el índice de assets pero omiten los archivos de audio: por eso puede haber avisos de sonidos ausentes. La integración antigua de Twitch de Minecraft también puede registrar un error de inicialización en Linux; las pruebas de Cubi y el mundo local se completaron.
 

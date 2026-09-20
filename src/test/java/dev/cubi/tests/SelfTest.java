@@ -7,7 +7,10 @@ import dev.cubi.core.MenuActivation;
 import dev.cubi.launch.CubiTransformer;
 import dev.cubi.launch.CubiTweaker;
 import dev.cubi.ui.HudPlacement;
+import dev.cubi.ui.Theme;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,6 +18,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipFile;
+import javax.imageio.ImageIO;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -32,6 +36,9 @@ public final class SelfTest {
     public static void main(String[] args) throws Exception {
         clicks();
         configuration();
+        themeMigration();
+        atlasAssets();
+        assertions += DeckTest.run();
         placement();
         menuActivation();
         menuDispatchContract();
@@ -117,6 +124,57 @@ public final class SelfTest {
         check(HudPlacement.snap(124, 70, 320, 0) == 124, "Fine adjustment bypasses magnetism");
         check(HudPlacement.snap(-20, 70, 320, 0) == 0 && HudPlacement.snap(300, 70, 320, 0) == 250, "Placement remains on-screen");
         check(HudPlacement.snap(12, 400, 320, 4) == 0, "Oversized widget remains anchored");
+    }
+
+    private static void themeMigration() throws Exception {
+        Path directory = Files.createTempDirectory("cubi-theme-test-");
+        Path file = directory.resolve("config.json");
+        try {
+            String old = "{\"schema\":1,\"menuKey\":50,\"layoutInitialized\":true,\"layoutRevision\":2,\"accent\":3,\"watermark\":false,"
+                    + "\"modules\":{\"frames\":{\"enabled\":false,\"key\":37,\"x\":0.61,\"y\":0.37,\"scale\":1.35,\"opacity\":0.65,\"background\":false,\"shadow\":false}}}";
+            Files.write(file, old.getBytes(StandardCharsets.UTF_8));
+            ClientConfig migrated = ClientConfig.load(file);
+            ClientConfig.ModuleState state = migrated.state("frames");
+            check(migrated.themeRevision == Theme.REVISION && migrated.accent == 0, "Old config adopts the official white accent");
+            check(migrated.menuKey == 50 && migrated.layoutRevision == 2 && migrated.layoutInitialized && !migrated.watermark,
+                    "Theme migration preserves existing controls and layout revision");
+            check(state.x == 0.61f && state.y == 0.37f && state.scale == 1.35f && state.opacity == 0.65f
+                    && !state.enabled && !state.background && !state.shadow && state.key == 37, "Theme migration preserves module settings");
+            check(migrated.save() && ClientConfig.load(file).themeRevision == Theme.REVISION, "Migration persists without a manual settings edit");
+            migrated.accent = 2;
+            migrated.changed(); migrated.save();
+            ClientConfig reloaded = ClientConfig.load(file);
+            check(reloaded.accent == 2, "Later accent customization is not reset on startup");
+            java.nio.file.attribute.FileTime modified = Files.getLastModifiedTime(file);
+            check(reloaded.save() && modified.equals(Files.getLastModifiedTime(file)), "Theme migration only runs once");
+        } finally { Files.deleteIfExists(file); Files.delete(directory); }
+    }
+
+    private static void atlasAssets() throws Exception {
+        BufferedImage atlas;
+        try (InputStream png = SelfTest.class.getResourceAsStream("/assets/cubi/ui/atlas.png")) {
+            check(png != null, "Packaged UI atlas is available without Minecraft");
+            atlas = ImageIO.read(png);
+        }
+        check(atlas != null && atlas.getWidth() == 2048 && atlas.getHeight() == 1024, "Atlas matches runtime texture coordinates");
+        check((atlas.getRGB(416, 992) >>> 24) == 0 && (atlas.getRGB(416, 961) >>> 24) > 0,
+                "Border mask has a transparent center and cannot fill a translucent HUD widget");
+        try (DataInputStream metrics = new DataInputStream(SelfTest.class.getResourceAsStream("/assets/cubi/ui/atlas.bin"))) {
+            check(metrics.readInt() == 0x43554249, "Font metrics header matches the renderer");
+            boolean valid = true;
+            for (int face = 0; face < 2; face++) {
+                float top = metrics.readFloat();
+                valid &= Float.isFinite(top) && top >= 0 && top < 64;
+                for (int glyph = 0; glyph < 224; glyph++) {
+                    float advance = metrics.readFloat();
+                    valid &= Float.isFinite(advance) && advance >= 0 && advance <= 64;
+                }
+            }
+            check(valid && metrics.read() == -1, "Both Cantarell faces have complete bounded metrics");
+        }
+        try (InputStream license = SelfTest.class.getResourceAsStream("/assets/cubi/ui/OFL-Cantarell.txt")) {
+            check(license != null && license.read() != -1, "Cantarell license is packaged with the atlas");
+        }
     }
 
     private static void menuActivation() {
