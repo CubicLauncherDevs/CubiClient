@@ -1,0 +1,8 @@
+build/
+dist/
+.cache/
+__pycache__/
+*.pyc
+.idea/
+*.iml
+run/
