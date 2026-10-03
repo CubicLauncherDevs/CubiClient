@@ -9,6 +9,7 @@ public final class Hooks {
     private static boolean failed;
     private static long consumedKey = Long.MIN_VALUE;
     private static boolean particlePass, particleFailed;
+    private static boolean zoomFailed;
     private Hooks() { }
 
     private static CubiClient client() throws Throwable {
@@ -40,6 +41,27 @@ public final class Hooks {
     }
 
     public static void consumeKey() { consumedKey = Keyboard.getEventNanoseconds(); }
+
+    /** Called before vanilla mouse processing, not from the FOV getter (which runs multiple times). */
+    public static void zoomFrame() {
+        if (client == null || failed || zoomFailed) return;
+        try {
+            int key = client.config.zoom.key;
+            boolean down = key > 1 && key < Keyboard.KEYBOARD_SIZE && Keyboard.isKeyDown(key);
+            client.cameraZoom.update(client.config.zoom, client.game.worldIdentity(),
+                    client.game.cameraInputActive() && client.config.zoomKeyAvailable(key), down, System.nanoTime());
+        } catch (Throwable error) {
+            client.cameraZoom.cancel(); zoomFailed = true;
+            System.err.println("[Cubi] Zoom desactivado por un error de integración.");
+            error.printStackTrace();
+        }
+    }
+    public static float zoomFov(float vanilla, boolean worldProjection) {
+        return client == null || failed || zoomFailed ? vanilla : client.cameraZoom.fov(vanilla, worldProjection);
+    }
+    public static float zoomMouse(float delta) {
+        return client == null || failed || zoomFailed ? delta : client.cameraZoom.mouse(delta);
+    }
 
     public static boolean mouse(boolean hasEvent) {
         try {

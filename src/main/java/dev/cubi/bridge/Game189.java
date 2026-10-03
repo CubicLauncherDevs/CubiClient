@@ -24,7 +24,7 @@ public final class Game189 {
     private final Object minecraft;
     private final Object settings;
     private final Object font;
-    private final Field screen, world, hidden, debug;
+    private final Field screen, world, hidden, debug, inGameFocus;
     private final Object[] movement = new Object[5];
     private final MethodHandle keyCode, drawText, textWidth, rectangle, color;
     private final MethodHandle displayScreen, getFps, scaledWidth, scaledHeight;
@@ -56,6 +56,7 @@ public final class Game189 {
         directory = (File) field(mc, "v").get(minecraft);
         screen = field(mc, "m");
         world = field(mc, "f");
+        inGameFocus = field(mc, "w");
         hidden = field(type("avh"), "aA");
         debug = field(type("avh"), "aC");
         String[] keys = {"Y", "Z", "aa", "ab", "ac"};
@@ -346,6 +347,10 @@ public final class Game189 {
 
     public Object screen() throws IllegalAccessException { return screen.get(minecraft); }
     public boolean inWorld() throws IllegalAccessException { return world.get(minecraft) != null; }
+    public boolean cameraInputActive() throws Throwable {
+        return screen() == null && inGameFocus.getBoolean(minecraft) && player() != null
+                && Display.isActive() && Mouse.isGrabbed();
+    }
     public boolean hudVisible() throws IllegalAccessException { return !hidden.getBoolean(settings) && !debug.getBoolean(settings); }
     public int fps() throws Throwable { return (int) getFps.invokeExact(); }
     public void show(Object next) throws Throwable { displayScreen.invokeExact(minecraft, next); }

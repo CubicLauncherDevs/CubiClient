@@ -2,6 +2,20 @@
 
 Versión del cliente: **0.0.1**. Los apartados históricos describen etapas de desarrollo, no incrementos de versión.
 
+## Zoom configurable · 2026-10-02
+
+Se añade Cámara → Zoom, con tecla mantenida C, ampliación inicial 4× (2×–8×), transición suave y adaptación de sensibilidad independientes. El nuevo parche afecta a `bfk` además de las cinco clases anteriores.
+
+- `python3 tools/build.py --replacement --test`: **459 comprobaciones Java correctas**, análisis de bytecode original, empaquetado y enlace JVM `-Xverify:all` de las seis clases parcheadas y la pantalla generada.
+- `python3 -m unittest discover -s tools -p 'test_*.py'`: **7 pruebas correctas**.
+- `ZoomTest`: ampliación óptica a distintos FOV, proyección de mano intacta, consulta repetida sin avanzar animación, ambos signos de movimiento de ratón, adaptación desactivada, liberación inmediata/suave, equivalencia temporal a 30/240 FPS, cancelación por inelegibilidad y cambios de mundo/tecla, necesidad de soltar tras una interrupción, ausencia de mundo y tecla sin asignar.
+- Configuración: valores inválidos/nulos, carga de configuraciones antiguas, precedencia de atajos existentes, persistencia de todos los ajustes y guardado sin escrituras cuando no hay cambios.
+- `DeckTest`: cuarta pestaña, captura/cancelación de tecla de zoom, regreso del editor a Cámara y regiones de controles sin solapamientos a distintas resoluciones.
+- `SelfTest`: un hook de muestreo por render, dos ajustes por cada una de las dos rutas del ratón, dos retornos de FOV y nuevo binding de foco contrastados con vanilla. Rechaza aplicar los hooks dos veces.
+- Se genera `dist/replacement/minecraft.jar` con versión **0.0.1**.
+
+**Pendiente de comprobación en juego:** esta entrega no abre Minecraft. Falta revisar visualmente el acercamiento, la velocidad percibida del ratón, la transición, la proyección de la mano, Cámara y las cancelaciones con chat/inventario y cambio de foco. Los resultados headless no sustituyen esta comprobación.
+
 ## Inicio clásico renovado · 2026-10-02
 
 Se recuperan el panorama animado, el logo y la fuente de Minecraft. Las acciones forman una columna central; hay un único acceso a Personalizar HUD, Opciones/Salir debajo y enlaces secundarios a Idioma/Realms. Los recursos se abren desde Opciones.

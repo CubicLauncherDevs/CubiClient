@@ -22,6 +22,7 @@ La organización toma como referencia la separación entre módulos y ajustes de
 - **Ajustes de módulo:** vista propia con botón «Volver», previsualización y filas para escala, opacidad, fondo, sombra y atajo.
 - **Apariencia:** tema, acento, «Mostrar CubiClient» y tecla para abrir/cerrar el menú.
 - **Rendimiento:** perfiles Equilibrado/Competitivo/Personalizado, ajustes gráficos, optimizaciones y diagnóstico exportable.
+- **Cámara:** activar Zoom, asignar su tecla, ajustar acercamiento, transición y sensibilidad.
 - **Editar HUD:** acceso desde la cabecera; vuelve a la vista desde la que se abrió.
 
 El nombre **CubiClient** aparece completo en la HUD, el menú y el título de ventana. En pantallas estrechas, la marca se eleva por encima de la hotbar para no solaparse con ella.
@@ -36,11 +37,18 @@ Los botones primarios son blancos; las opciones usan casillas con marca de verif
 
 La apertura con Shift derecho se aplica al terminar el procesamiento de entrada del tick. Así, Minecraft no reenvía la pulsación de apertura al menú recién creado como si fuera una orden de cierre. Mantener la tecla pulsada tampoco cierra el panel por repetición. Si otra pantalla se abre mientras tanto, se cancela la solicitud pendiente.
 
+### Zoom
+
+Mantén **C** durante la partida para acercar la vista y suéltala para volver. Está activado inicialmente con **4×**, transición suave y sensibilidad adaptada al acercamiento. En **Shift derecho → Cámara → Zoom** puedes desactivarlo, cambiar la tecla, ajustar entre **2× y 8×** (pasos de 0,5×) y activar/desactivar la transición y la adaptación del ratón. Supr o Retroceso durante la captura elimina la tecla asignada; Esc cancela la captura.
+
+El zoom aplica una ampliación óptica a la vista del mundo y conserva el tamaño del objeto en mano y del HUD. No modifica el FOV ni la sensibilidad guardados en `options.txt`. Al abrir chat, inventario o menús, perder el foco o cambiar de mundo, vuelve inmediatamente a la vista normal; una tecla mantenida debe soltarse antes de volver a activar el zoom. Los ajustes se guardan en `cubiclient/config.json` de la instancia. Si C ya estaba asignada a un atajo del HUD o del menú, ese atajo conserva prioridad: elige otra tecla en Cámara.
+
 ## Lo que incluye
 
 | Componente | Función |
 | --- | --- |
-| **Menú CubiClient** | Pestañas Módulos/Apariencia/Rendimiento, tarjetas con activación y engranaje, ajustes individuales |
+| **Menú CubiClient** | Pestañas Módulos/Apariencia/Rendimiento/Cámara, tarjetas con activación y engranaje, ajustes individuales |
+| **Zoom** | Mantener C, acercamiento 2×–8×, transición suave y adaptación de sensibilidad configurables |
 | **FPS** | Indicador compacto de FPS sobre fondo translúcido opcional |
 | **Keystrokes + CPS** | Teclas con transición de color y CPS izquierdo/derecho bajo LMB/RMB, en una ventana móvil de un segundo; respeta los controles de Minecraft |
 | **Ping** | Latencia en ms, en un widget de 70 × 24 como FPS; `--` si todavía no está disponible |
@@ -184,6 +192,8 @@ La primera entrega de los cuatro módulos básicos y la paginación pasó **301 
 
 El inicio clásico renovado pasa **369 comprobaciones Java**, validación del jar, enlace JVM y **7 pruebas Python**. Se actualizaron las expectativas antiguas de paginación, opacidad y posición de armadura. La revisión gráfica del inicio y los ajustes visuales anteriores sigue pendiente; esta entrega no ha abierto Minecraft.
 
+La incorporación del zoom pasa **459 comprobaciones Java**, validación del jar de reemplazo con seis clases parcheadas, enlace JVM y **7 pruebas Python**. La prueba visual del zoom sigue pendiente.
+
 Consulta [verificación y rendimiento](docs/VERIFICATION.md) para el alcance real de las comprobaciones y [arquitectura](docs/ARCHITECTURE.md) para ampliar el cliente.
 
 ## Estructura
@@ -193,6 +203,7 @@ src/main/java/dev/cubi/
   launch/       Entrada de la versión y transformaciones de bytecode
   bridge/       Adaptador cacheado de Minecraft 1.8.9 e instanciación de GuiScreen
   core/         Ciclo de vida, puntos de entrada, métricas y ventana de CPS
+  camera/       Estado temporal y configuración del zoom
   config/       Persistencia y validación
   module/       Registro, FPS, Keystrokes/CPS, Ping, Armor Status, Coordenadas y Servidor
   performance/  Perfiles, caché de resolución, visibilidad y captura de fotogramas

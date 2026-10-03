@@ -18,10 +18,11 @@
 - Headless success is not in-game verification. Check `docs/VERIFICATION.md` before claiming graphical coverage; existing screenshots can predate the current UI.
 
 ## Integration traps
-- `PrepareClasses` applies `CubiTransformer.TARGETS` (`ave`, `avo`, `aya`, `bec`, `beb`) at build time. Keep `tools/replacement.py:PATCHED_CLASSES` synchronized. The replacement starts at `net.minecraft.client.main.Main` with vanilla libraries; the packager rejects runtime ASM/LaunchWrapper references in Cubi classes. Keep build-only code out of runtime paths.
+- `PrepareClasses` applies `CubiTransformer.TARGETS` (`ave`, `avo`, `aya`, `bec`, `beb`, `bfk`) at build time. Keep `tools/replacement.py:PATCHED_CLASSES` synchronized. The replacement starts at `net.minecraft.client.main.Main` with vanilla libraries; the packager rejects runtime ASM/LaunchWrapper references in Cubi classes. Keep build-only code out of runtime paths.
 - Put Minecraft access in `bridge/Game189` using its cached handles and runtime loader; update binding checks in `SelfTest` when adding/changing obfuscated access. There is no decompiled Minecraft source workspace.
 - `ScreenGenerator` emits `cubi.generated.ControlScreen`. Its namespace must remain outside `dev.cubi.*`, which the optional `CubiTweaker` excludes from its game classloader.
 - **Do not open the menu directly inside keyboard dispatch.** Vanilla forwards the same event to the newly opened screen, immediately closing it. Preserve `MenuActivation`'s end-of-tick opening and the consumed-event/repeat guards in `Hooks` and `ControlDeck`.
+- Zoom lives in `camera/` and the Camera tab, not the movable HUD registry. Update its snapshot once at the start of `bfk.a(FJ)V`; the world FOV and both mouse axes share it. Preserve the hand projection and never write vanilla FOV/sensitivity or `options.txt` while zooming. Interruptions reset zoom and require releasing a held key before reactivation.
 
 ## Editing UI and generated assets
 - `src/build/java/` is tracked source for screen/atlas generation. Root `/build/`, `dist/`, `.cache/`, and `run/` are outputs. Keep the leading slash in `.gitignore`'s `/build/`: `build/` previously hid the source generators.

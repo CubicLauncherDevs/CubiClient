@@ -11,14 +11,14 @@ import org.objectweb.asm.Opcodes;
 /** Exact vanilla 1.8.9 mappings. Fail loudly if an expected hook disappears. */
 public final class CubiTransformer implements IClassTransformer, Opcodes {
     private static final String HOOKS = "dev/cubi/core/Hooks";
-    public static final String[] TARGETS = {"ave", "avo", "aya", "bec", "beb"};
+    public static final String[] TARGETS = {"ave", "avo", "aya", "bec", "beb", "bfk"};
 
     @Override
     public byte[] transform(String name, String transformedName, byte[] bytes) {
         if (bytes == null || !(name.equals("ave") || name.equals("avo") || name.equals("aya")
-                || name.equals("bec") || name.equals("beb"))) return bytes;
+                || name.equals("bec") || name.equals("beb") || name.equals("bfk"))) return bytes;
         final String target = name;
-        final int[] matches = new int[13];
+        final int[] matches = new int[17];
         ClassReader reader = new ClassReader(bytes);
         // Hooks preserve stack shapes; existing frames remain valid without hierarchy loading.
         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
@@ -35,6 +35,10 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                 final boolean frame = target.equals("ave") && method.equals("av") && desc.equals("()V");
                 final boolean particlePass = target.equals("bec") && method.equals("a") && desc.equals("(Lpk;F)V");
                 final boolean particle = target.equals("beb") && method.equals("a") && desc.equals("(Lbfd;Lpk;FFFFFF)V");
+                final boolean cameraFrame = target.equals("bfk") && method.equals("a") && desc.equals("(FJ)V");
+                final boolean cameraFov = target.equals("bfk") && method.equals("a") && desc.equals("(FZ)F");
+                if (cameraFrame) matches[13]++;
+                if (cameraFov) matches[14]++;
                 if (tick) matches[0]++;
                 if (key) matches[1]++;
                 if (hud || homeDraw) matches[2]++;
@@ -47,6 +51,7 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                     @Override
                     public void visitCode() {
                         super.visitCode();
+                        if (cameraFrame) call("zoomFrame", "()V");
                         if (homeDraw || homeClick || homeType) {
                             super.visitVarInsn(ALOAD, 0);
                             super.visitVarInsn(ILOAD, 1);
@@ -79,6 +84,14 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String method, String descriptor, boolean itf) {
                         if (owner.equals(HOOKS)) throw new IllegalStateException("CubiClient: hooks ya presentes en " + target);
+                        if (cameraFrame && opcode == INVOKEVIRTUAL && owner.equals("bew") && method.equals("c") && descriptor.equals("(FF)V")) {
+                            // [player, yaw, pitch] -> scale both deltas, preserving the original call.
+                            matches[15]++;
+                            call("zoomMouse", "(F)F");
+                            super.visitInsn(SWAP);
+                            call("zoomMouse", "(F)F");
+                            super.visitInsn(SWAP);
+                        }
                         int stage = -1;
                         if (frame) {
                             if (owner.equals("ave") && method.equals("s") && descriptor.equals("()V")) stage = 0;
@@ -99,6 +112,11 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
 
                     @Override
                     public void visitInsn(int opcode) {
+                        if (cameraFov && opcode == FRETURN) {
+                            matches[16]++;
+                            super.visitVarInsn(ILOAD, 2);
+                            call("zoomFov", "(FZ)F");
+                        }
                         if (opcode == RETURN) {
                             if (tick) call("tick", "()V");
                             if (hud) call("hud", "()V");
@@ -120,6 +138,7 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
         }, 0);
         boolean valid = target.equals("ave") ? matches[0] == 1 && matches[1] == 1 && matches[3] == 1
                 && matches[4] == 1 && matches[5] == 1 && matches[6] == 1 && matches[7] == 1 && matches[8] == 1
+                : target.equals("bfk") ? matches[13] == 1 && matches[14] == 1 && matches[15] == 2 && matches[16] == 2
                 : target.equals("aya") ? matches[2] == 1 && matches[11] == 1 && matches[12] == 1
                 : target.equals("bec") ? matches[9] == 1 : target.equals("beb") ? matches[10] == 1 : matches[2] == 1;
         if (!valid) throw new IllegalStateException("CubiClient: bytecode incompatible para " + target + "; usa vanilla 1.8.9");

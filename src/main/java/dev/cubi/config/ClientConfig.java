@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.cubi.ui.Theme;
 import dev.cubi.performance.PerformanceSettings;
+import dev.cubi.camera.ZoomSettings;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,7 @@ public final class ClientConfig {
     public int accent;
     public boolean watermark = true;
     public PerformanceSettings performance = new PerformanceSettings();
+    public ZoomSettings zoom = new ZoomSettings();
     public Map<String, ModuleState> modules = new LinkedHashMap<String, ModuleState>();
     private transient Path file;
     private transient boolean dirty;
@@ -86,6 +88,8 @@ public final class ClientConfig {
         if (config.accent < 0 || config.accent > 3) config.accent = 0;
         if (config.performance == null) config.performance = new PerformanceSettings();
         config.performance.sanitize();
+        if (config.zoom == null) config.zoom = new ZoomSettings();
+        config.zoom.sanitize();
         config.file = file;
         return config;
     }
@@ -95,6 +99,13 @@ public final class ClientConfig {
         if (state == null) { state = new ModuleState(); modules.put(id, state); dirty = true; }
         state.sanitize();
         return state;
+    }
+
+    /** Existing saved HUD/menu bindings take precedence over a newly introduced zoom key. */
+    public boolean zoomKeyAvailable(int key) {
+        if (key <= 1 || key > 255 || key == menuKey) return false;
+        for (ModuleState module : modules.values()) if (module != null && module.key == key) return false;
+        return true;
     }
 
     public void changed() { dirty = true; }

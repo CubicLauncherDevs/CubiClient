@@ -2,8 +2,8 @@ package dev.cubi.ui;
 
 /** Navigation and keyboard focus, independent from Minecraft and OpenGL. */
 public final class DeckState {
-    public enum Page { MODULES, APPEARANCE, PERFORMANCE, DIAGNOSTICS, SETTINGS, EDITOR }
-    public static final int NO_BINDING = -1, MENU_BINDING = -2;
+    public enum Page { MODULES, APPEARANCE, PERFORMANCE, CAMERA, DIAGNOSTICS, SETTINGS, EDITOR }
+    public static final int NO_BINDING = -1, MENU_BINDING = -2, ZOOM_BINDING = -3;
     private final int moduleCount;
     private Page page = Page.MODULES, editorReturn = Page.MODULES;
     private int selected, modulePage, binding = NO_BINDING;
@@ -34,7 +34,7 @@ public final class DeckState {
     }
     public void nextModule() { select((selected + 1) % moduleCount); }
     public void tab(Page target) {
-        if (target != Page.MODULES && target != Page.APPEARANCE && target != Page.PERFORMANCE) throw new IllegalArgumentException("Not a root tab");
+        if (target != Page.MODULES && target != Page.APPEARANCE && target != Page.PERFORMANCE && target != Page.CAMERA) throw new IllegalArgumentException("Not a root tab");
         page = target;
         cancelCapture();
     }
@@ -53,6 +53,10 @@ public final class DeckState {
     public void captureMenu() {
         if (page != Page.APPEARANCE) throw new IllegalStateException("Menu binding is only available in appearance");
         binding = MENU_BINDING;
+    }
+    public void captureZoom() {
+        if (page != Page.CAMERA) throw new IllegalStateException("Zoom binding is only available in camera settings");
+        binding = ZOOM_BINDING;
     }
     public void cancelCapture() { binding = NO_BINDING; }
 

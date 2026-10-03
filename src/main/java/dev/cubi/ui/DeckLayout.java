@@ -6,6 +6,11 @@ public final class DeckLayout {
     public static final Rect EDIT = new Rect(398, 18, 104, 30), CLOSE = new Rect(510, 18, 30, 30);
     public static final Rect MODULES_TAB = new Rect(20, 72, 114, 28), APPEARANCE_TAB = new Rect(142, 72, 114, 28);
     public static final Rect PERFORMANCE_TAB = new Rect(264, 72, 132, 28);
+    public static final Rect CAMERA_TAB = new Rect(404, 72, 136, 28);
+    public static final Rect ZOOM_PANEL = new Rect(20, 148, 520, 176), ZOOM_ENABLE = new Rect(430, 116, 110, 26);
+    public static final Rect ZOOM_BIND = new Rect(400, 157, 124, 24);
+    public static final Rect ZOOM_MINUS = new Rect(424, 197, 22, 22), ZOOM_PLUS = new Rect(502, 197, 22, 22);
+    public static final Rect ZOOM_SMOOTH = new Rect(490, 235, 34, 23), ZOOM_SENSITIVITY = new Rect(490, 277, 34, 23);
     public static final Rect[] PROFILES = {new Rect(20, 116, 168, 26), new Rect(196, 116, 168, 26), new Rect(372, 116, 168, 26)};
     public static final Rect[] PERFORMANCE_OPTIONS = new Rect[11];
     public static final Rect RESTORE_PERFORMANCE = new Rect(20, 300, 166, 24), DIAGNOSTICS = new Rect(194, 300, 166, 24);

@@ -79,10 +79,20 @@ public final class DeckTest {
         DeckState odd = new DeckState(5); odd.turnModules(2);
         check(odd.visibleModule(0) == 4 && odd.visibleModule(1) == -1 && odd.visibleModule(2) == -1,
                 "Partial pages expose no nonexistent module targets");
+        nav.tab(Page.CAMERA); nav.captureZoom();
+        check(nav.binding() == DeckState.ZOOM_BINDING, "Zoom has a dedicated camera binding target");
+        check(!nav.back() && !nav.capturing() && nav.page() == Page.CAMERA, "Escape cancels zoom binding without closing settings");
+        nav.edit(); nav.back();
+        check(nav.page() == Page.CAMERA && nav.back(), "HUD editor returns to Camera, which is a root tab");
+        nav.captureZoom(); nav.tab(Page.MODULES);
+        check(!nav.capturing(), "Changing tabs clears zoom binding focus");
+        guarded = false;
+        try { nav.captureZoom(); } catch (IllegalStateException expected) { guarded = true; }
+        check(guarded, "Hidden zoom binding cannot capture input");
     }
 
     private static void geometry() {
-        List<Rect> header = Arrays.asList(DeckLayout.EDIT, DeckLayout.CLOSE, DeckLayout.MODULES_TAB, DeckLayout.APPEARANCE_TAB, DeckLayout.PERFORMANCE_TAB);
+        List<Rect> header = Arrays.asList(DeckLayout.EDIT, DeckLayout.CLOSE, DeckLayout.MODULES_TAB, DeckLayout.APPEARANCE_TAB, DeckLayout.PERFORMANCE_TAB, DeckLayout.CAMERA_TAB);
         List<Rect> modules = new ArrayList<Rect>(header);
         modules.add(DeckLayout.MODULE_PREVIOUS); modules.add(DeckLayout.MODULE_NEXT);
         for (int i = 0; i < DeckLayout.CARDS.length; i++) {
@@ -114,6 +124,10 @@ public final class DeckTest {
         List<Rect> diagnostics = new ArrayList<Rect>(header);
         diagnostics.addAll(Arrays.asList(DeckLayout.BACK, DeckLayout.CAPTURE_START, DeckLayout.CAPTURE_STOP, DeckLayout.CAPTURE_EXPORT));
         check(disjoint(diagnostics), "Diagnostic actions do not overlap");
+        List<Rect> camera = new ArrayList<Rect>(header);
+        camera.addAll(Arrays.asList(DeckLayout.ZOOM_ENABLE, DeckLayout.ZOOM_BIND, DeckLayout.ZOOM_MINUS,
+                DeckLayout.ZOOM_PLUS, DeckLayout.ZOOM_SMOOTH, DeckLayout.ZOOM_SENSITIVITY));
+        check(disjoint(camera), "Camera controls and all four tabs have distinct hit regions");
         List<Rect> editor = Arrays.asList(DeckLayout.EDITOR_MINUS, DeckLayout.EDITOR_PLUS, DeckLayout.EDITOR_RESET, DeckLayout.EDITOR_DONE);
         check(disjoint(editor), "Editor toolbar actions do not overlap");
         Rect bar = new Rect(0, 0, DeckLayout.EDITOR_WIDTH, DeckLayout.EDITOR_HEIGHT);
@@ -122,7 +136,7 @@ public final class DeckTest {
         check(Math.abs(DeckLayout.opacityAt(DeckLayout.OPACITY.centerX()) - 0.425f) < 0.004f, "Slider midpoint maps correctly");
 
         List<Rect> all = new ArrayList<Rect>(modules); all.addAll(settings); all.addAll(appearance);
-        all.addAll(performance); all.addAll(diagnostics);
+        all.addAll(performance); all.addAll(diagnostics); all.addAll(camera);
         Rect canvas = new Rect(0, 0, DeckLayout.WIDTH, DeckLayout.HEIGHT);
         boolean fits = true;
         for (Rect rect : all) fits &= contains(canvas, rect);

@@ -20,6 +20,7 @@ public final class ControlDeck {
     private static CubiClient client;
     private static DeckState nav;
     private static PerformancePanel performance;
+    private static CameraPanel camera;
     private static Motion[] hover, enabled;
     private static Object previous;
     private static boolean dragging, opacityDrag;
@@ -35,6 +36,7 @@ public final class ControlDeck {
         nav = new DeckState(instance.modules.all.length);
         nav.select(selected);
         performance = new PerformancePanel(instance);
+        camera = new CameraPanel(instance);
         hover = new Motion[instance.modules.all.length];
         enabled = new Motion[instance.modules.all.length];
         for (int i = 0; i < hover.length; i++) { hover[i] = new Motion(); enabled[i] = new Motion(); }
@@ -84,17 +86,21 @@ public final class ControlDeck {
             tab("Módulos", MODULES_TAB, nav.page() == Page.MODULES || nav.page() == Page.SETTINGS, mx, my);
             tab("Apariencia", APPEARANCE_TAB, nav.page() == Page.APPEARANCE, mx, my);
             tab("Rendimiento", PERFORMANCE_TAB, nav.page() == Page.PERFORMANCE || nav.page() == Page.DIAGNOSTICS, mx, my);
+            tab("Cámara", CAMERA_TAB, nav.page() == Page.CAMERA, mx, my);
 
             if (nav.page() == Page.MODULES) drawModules(mx, my);
             else if (nav.page() == Page.SETTINGS) drawSettings(mx, my);
             else if (nav.page() == Page.APPEARANCE) drawAppearance(mx, my);
+            else if (nav.page() == Page.CAMERA) camera.draw(nav, mx, my);
             else performance.draw(nav.page() == Page.DIAGNOSTICS, mx, my);
 
             ink.rect(20, 333, WIDTH - 40, 1, Theme.BORDER);
             if (nav.capturing()) {
-                ink.small(nav.binding() == DeckState.MENU_BINDING
+                String prompt = nav.binding() == DeckState.MENU_BINDING
                         ? "Pulsa una tecla para abrir el menú · Esc cancela"
-                        : "Pulsa una tecla · Esc cancela · Supr elimina el atajo", 20, 346, client.accent());
+                        : "Pulsa una tecla · Esc cancela · Supr elimina el atajo";
+                if (client.config.status.startsWith("Tecla asignada")) prompt = client.config.status + " · Elige otra / Esc cancela";
+                ink.small(prompt, 20, 346, client.accent());
             } else {
                 ink.small(client.config.status, 20, 346, Theme.MUTED);
                 ink.center(nav.page() == Page.SETTINGS || nav.page() == Page.DIAGNOSTICS ? "Esc: volver" : "Esc: cerrar", 185, 346, 190, 8, false, Theme.SECONDARY);
@@ -290,6 +296,8 @@ public final class ControlDeck {
             if (MODULES_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.MODULES); return; }
             if (APPEARANCE_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.APPEARANCE); return; }
             if (PERFORMANCE_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.PERFORMANCE); return; }
+            if (CAMERA_TAB.contains(mx, my)) { finishInteraction(); nav.tab(Page.CAMERA); return; }
+            if (nav.page() == Page.CAMERA) { camera.click(nav, mx, my); return; }
             if (nav.page() == Page.PERFORMANCE || nav.page() == Page.DIAGNOSTICS) { performance.click(nav, mx, my); return; }
             if (nav.page() == Page.MODULES) {
                 if (MODULE_PREVIOUS.contains(mx, my)) { nav.turnModules(-1); return; }
@@ -358,10 +366,17 @@ public final class ControlDeck {
                 boolean clear = key == Keyboard.KEY_BACK || key == Keyboard.KEY_DELETE;
                 if (nav.binding() == DeckState.MENU_BINDING) {
                     if (clear) { nav.cancelCapture(); return; }
+                    if (key == client.config.zoom.key) { client.config.status = "Tecla asignada al zoom"; return; }
                     client.config.menuKey = key;
                     for (HudModule module : client.modules.all) if (module.state.key == key) module.state.key = 0;
+                } else if (nav.binding() == DeckState.ZOOM_BINDING) {
+                    if (!clear && !client.config.zoomKeyAvailable(key)) {
+                        client.config.status = "Tecla asignada al menú o al HUD"; return;
+                    }
+                    client.config.zoom.key = clear ? 0 : key;
+                    client.cameraZoom.cancel();
                 } else {
-                    if (!clear && key == client.config.menuKey) return;
+                    if (!clear && (key == client.config.menuKey || key == client.config.zoom.key)) return;
                     for (HudModule module : client.modules.all) if (module.state.key == key) module.state.key = 0;
                     client.modules.all[nav.binding()].state.key = clear ? 0 : key;
                 }

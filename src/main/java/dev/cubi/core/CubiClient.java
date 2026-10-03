@@ -8,6 +8,7 @@ import dev.cubi.module.ModuleRegistry;
 import dev.cubi.ui.ControlDeck;
 import dev.cubi.ui.Ink;
 import dev.cubi.ui.HomeScreen;
+import dev.cubi.camera.ZoomController;
 import dev.cubi.performance.FrameCapture;
 import dev.cubi.performance.PerformanceSettings;
 import dev.cubi.performance.VideoSettings;
@@ -22,6 +23,7 @@ public final class CubiClient {
     public final ModuleRegistry modules;
     public final Ink ink;
     public final HomeScreen home;
+    public final ZoomController cameraZoom = new ZoomController();
     public final ClickWindow left = new ClickWindow(), right = new ClickWindow();
     public final FrameCapture capture = new FrameCapture();
     public Object captureWorld;

@@ -6,7 +6,7 @@ import zipfile
 
 from common import VERSION, sha1
 
-PATCHED_CLASSES = ("ave.class", "avo.class", "aya.class", "bec.class", "beb.class")
+PATCHED_CLASSES = ("ave.class", "avo.class", "aya.class", "bec.class", "beb.class", "bfk.class")
 MAIN_CLASS = "net/minecraft/client/main/Main.class"
 SCREEN_CLASS = "cubi/generated/ControlScreen.class"
 

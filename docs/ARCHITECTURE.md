@@ -14,9 +14,9 @@ Compilación: Mojang 1.8.9 + hooks preaplicados + Cubi + GuiScreen generada
 Prism → net.minecraft.client.main.Main → Hooks → CubiClient
 ```
 
-`tools/build.py --replacement` compila las utilidades de `src/build/java/`. `PrepareClasses` aplica `CubiTransformer` a las cinco clases de `CubiTransformer.TARGETS` y valida el bytecode. `ScreenGenerator` genera `cubi.generated.ControlScreen` durante la compilación.
+`tools/build.py --replacement` compila las utilidades de `src/build/java/`. `PrepareClasses` aplica `CubiTransformer` a las seis clases de `CubiTransformer.TARGETS` y valida el bytecode. `ScreenGenerator` genera `cubi.generated.ControlScreen` durante la compilación.
 
-`tools/replacement.py` combina las clases preparadas, el resto del jar original y las clases de Cubi. Renueva el manifiesto y retira las firmas/índices que ya no describen el contenido modificado. Verifica todas las entradas originales: solamente pueden cambiar las cinco clases objetivo y esos metadatos. El resultado se publica mediante un reemplazo atómico tras validar su contenido.
+`tools/replacement.py` combina las clases preparadas, el resto del jar original y las clases de Cubi. Renueva el manifiesto y retira las firmas/índices que ya no describen el contenido modificado. Verifica todas las entradas originales: solamente pueden cambiar las seis clases objetivo y esos metadatos. El resultado se publica mediante un reemplazo atómico tras validar su contenido.
 
 El jar final conserva la entrada estándar de Minecraft. Las utilidades de compilación, las pruebas, LaunchWrapper y ASM quedan fuera del archivo; se comprueba también que las clases de Cubi no conserven referencias a esas dos dependencias. Prism aporta las bibliotecas normales de 1.8.9 y los assets.
 
@@ -41,6 +41,8 @@ En este formato alternativo, el transformador se ejecuta al cargar las clases. A
 | `ave` / Minecraft | `av()V` | Captura opcional del fotograma y etapas: tick, render, presentación y limitador |
 | `bec` / EffectRenderer | `a(Lpk;F)V` | Delimita la pasada normal de partículas elegible para culling |
 | `beb` / EntityFX | `a(Lbfd;Lpk;FFFFFF)V` | Retorno temprano para billboards estándar totalmente fuera de cámara |
+| `bfk` / EntityRenderer | `a(FJ)V` | Actualiza el zoom antes del procesamiento de ratón; escala yaw/pitch antes de ambas llamadas vanilla a `bew.c(FF)V` |
+| `bfk` / EntityRenderer | `a(FZ)F` | Modifica los retornos del FOV solo cuando se solicita la proyección del mundo |
 
 Las firmas se contrastan con el `.jar` oficial en `SelfTest`. El transformador conserva las formas de la pila y los stack frames originales; recalcula máximos y emite frames explícitos para las ramas nuevas al entrar en `beb` y los callbacks de `aya`. Si falta un punto de integración esperado o ya hay hooks, falla. `--replacement --test` también enlaza las clases finales bajo `-Xverify:all` con las bibliotecas vanilla, sin inicializar el juego ni abrir una ventana.
 
@@ -93,6 +95,14 @@ No hay un bus de eventos reflectivo ni objetos de evento creados en cada fotogra
 El contrato común se encarga de escala, posición, persistencia y representación en el editor. Si un nuevo módulo necesita acceder al juego, añade el acceso cacheado a `Game189` y su comprobación al test de mappings.
 
 `ModuleRegistry.frames` y `ModuleRegistry.keys` identifican los consumidores sin depender del índice del array. Keystrokes muestra los CPS bajo LMB/RMB: los eventos se capturan mientras está activo y las etiquetas se preparan en el tick. Al desactivarlo, los buffers se vacían. Mantiene su ID `keys` y dimensiones 82 × 94; los ajustes heredados `clicks` se conservan en el JSON, sin registrar un widget independiente.
+
+### Cámara y zoom
+
+`ZoomSettings` almacena activación, tecla (C/46 inicialmente), ampliación 2×–8×, suavizado y adaptación del ratón en `ClientConfig.zoom`. `CameraPanel`, `DeckState.Page.CAMERA` y los controles compartidos de `DeckLayout` permiten editarlos sin añadir widgets al HUD. Las configuraciones antiguas reciben los valores predeterminados; los atajos y posiciones previos se conservan. Un conflicto con un atajo existente del menú/HUD inhibe el zoom y se indica en Cámara.
+
+`Hooks.zoomFrame` muestrea la tecla y la elegibilidad una vez por render, antes del ratón. `Game189.cameraInputActive` exige un jugador en el mundo, pantalla cerrada, foco de juego/ventana y ratón capturado. `ZoomController` es independiente de Minecraft: interpola con tiempo transcurrido el factor óptico `s` entre 1 y `1/ampliación`; calcula `2·atan(tan(FOV/2)·s)` para el mundo. La proyección de la mano y el HUD no se modifican. Los dos ejes de ratón usan ese mismo `s` al adaptar sensibilidad, incluidas las rutas vanilla normal y de cámara suave.
+
+El renderer original conserva su cálculo de FOV y sensibilidad. No se cambian campos de `GameSettings` ni se guarda configuración durante la transición. Al abrir una pantalla, perder foco, cambiar de mundo/tecla o desactivar el zoom se restaura inmediatamente el factor 1; tras una interrupción con la tecla mantenida se requiere soltarla. Un fallo de integración desactiva únicamente los hooks del zoom y devuelve los valores vanilla.
 
 Los otros cuatro widgets son `PingModule`, `ArmorModule`, `CoordinatesModule` y `ServerModule`. `Game189` consulta el ping de `NetworkPlayerInfo` mediante el UUID local; lee posiciones de `Entity` y la dirección de `ServerData`; obtiene las cuatro ranuras de armadura de `InventoryPlayer`, invirtiendo botas→casco a casco→botas. No se envían paquetes adicionales. `HudValues` centraliza redondeo de coordenadas, porcentaje acotado de durabilidad y estados sin conexión/datos. Se formatean etiquetas solamente cuando cambia su valor. `ModuleRegistry` llama a `clearData` al cambiar de mundo, incluso para módulos desactivados, liberando referencias al equipo anterior.
 

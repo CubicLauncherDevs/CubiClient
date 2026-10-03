@@ -39,6 +39,7 @@ public final class SelfTest {
         themeMigration();
         atlasAssets();
         assertions += HomeTest.run();
+        assertions += ZoomTest.run();
         assertions += DeckTest.run();
         assertions += PerformanceTest.run();
         assertions += HudTest.run();
@@ -301,6 +302,11 @@ public final class SelfTest {
                 hook(output, "av", "()V", "frameEnd", 1);
                 hook(output, "av", "()V", "stageBegin", 4);
                 hook(output, "av", "()V", "stageEnd", 4);
+            } else if (name.equals("bfk")) {
+                hook(output, "a", "(FJ)V", "zoomFrame", 1);
+                hook(output, "a", "(FJ)V", "zoomMouse", 4);
+                hook(output, "a", "(FZ)F", "zoomFov", 2);
+                hook(output, "b", "(FJ)V", "zoomFrame", 0);
             } else if (name.equals("aya")) {
                 hook(output, "a", "(IIF)V", "homeDraw", 1);
                 hook(output, "a", "(III)V", "homeClick", 1);
@@ -326,6 +332,9 @@ public final class SelfTest {
         field(mc, "h", "Lbew;"); method(mc, "u", "()Lbcy;"); method(mc, "D", "()Lbde;");
         method(mc, "E", "()Z"); method(mc, "ag", "()Lbjh;");
         method(mc, "t", "()Z");
+        field(mc, "w", "Z");
+        method(node(vanilla, "bfk"), "a", "(FJ)V");
+        method(node(vanilla, "bfk"), "a", "(FZ)F");
         field(node(vanilla, "axu"), "n", "Ljava/util/List;");
         field(node(vanilla, "avs"), "k", "I");
         field(node(vanilla, "avs"), "l", "Z"); field(node(vanilla, "avs"), "m", "Z");
