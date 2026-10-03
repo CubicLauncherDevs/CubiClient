@@ -59,19 +59,21 @@ public final class DeckTest {
         check(!nav.back() && nav.page() == Page.DIAGNOSTICS, "Editor returns to diagnostics");
         check(!nav.back() && nav.page() == Page.PERFORMANCE && nav.back(), "Diagnostics returns to performance before closing");
         nav.tab(Page.MODULES);
-        check(nav.modulePages() == 3 && nav.visibleModule(0) == 0 && nav.visibleModule(1) == 1, "Browser starts with FPS and Keystrokes");
+        check(nav.modulePages() == 2 && nav.visibleModule(0) == 0 && nav.visibleModule(1) == 1
+                && nav.visibleModule(2) == 2 && nav.visibleModule(3) == 3, "First page contains FPS, Keystrokes, ping and armor");
         nav.turnModules(-1);
         check(nav.modulePage() == 0, "Previous page clamps at the beginning");
         nav.turnModules(1);
-        check(nav.visibleModule(0) == 2 && nav.visibleModule(1) == 3, "Second page targets ping and armor, not the first two widgets");
+        check(nav.visibleModule(0) == 4 && nav.visibleModule(1) == 5
+                && nav.visibleModule(2) == -1 && nav.visibleModule(3) == -1, "Second page contains coordinates and server, with two empty slots");
         nav.settings(nav.visibleModule(1)); nav.captureModule();
-        check(nav.binding() == 3, "Binding belongs to armor on the second browser page");
+        check(nav.binding() == 5, "Binding belongs to server on the second browser page");
         nav.turnModules(1);
         check(nav.modulePage() == 1, "Hidden pagination cannot change binding focus");
         nav.back(); nav.back();
         check(nav.page() == Page.MODULES && nav.modulePage() == 1, "Back from settings preserves browser page");
         nav.turnModules(1); nav.turnModules(1);
-        check(nav.modulePage() == 2 && nav.visibleModule(0) == 4 && nav.visibleModule(1) == 5, "Last page targets coordinates and server and clamps");
+        check(nav.modulePage() == 1 && nav.visibleModule(0) == 4 && nav.visibleModule(1) == 5, "Last page targets coordinates and server and clamps");
         nav.edit(); nav.select(5); nav.nextModule(); nav.back();
         check(nav.modulePage() == 0 && nav.selected() == 0, "Editor wrap reveals the selected widget's page");
         DeckState odd = new DeckState(5); odd.turnModules(2);
@@ -116,8 +118,8 @@ public final class DeckTest {
         check(disjoint(editor), "Editor toolbar actions do not overlap");
         Rect bar = new Rect(0, 0, DeckLayout.EDITOR_WIDTH, DeckLayout.EDITOR_HEIGHT);
         for (Rect rect : editor) check(contains(bar, rect), "Editor controls remain inside the toolbar");
-        check(DeckLayout.opacityAt(-100) == 0.1f && DeckLayout.opacityAt(1000) == 0.85f, "Slider clamps drags outside its new bounds");
-        check(Math.abs(DeckLayout.opacityAt(DeckLayout.OPACITY.centerX()) - 0.475f) < 0.004f, "Slider midpoint maps correctly");
+        check(DeckLayout.opacityAt(-100) == 0 && DeckLayout.opacityAt(1000) == 0.85f, "Slider permits a fully transparent HUD and clamps outside its bounds");
+        check(Math.abs(DeckLayout.opacityAt(DeckLayout.OPACITY.centerX()) - 0.425f) < 0.004f, "Slider midpoint maps correctly");
 
         List<Rect> all = new ArrayList<Rect>(modules); all.addAll(settings); all.addAll(appearance);
         all.addAll(performance); all.addAll(diagnostics);
@@ -164,7 +166,6 @@ public final class DeckTest {
         check(right <= 308 && y + 13 < 240 - 22, "Full CubiClient watermark sits above the hotbar on a narrow screen");
         check(HudPlacement.watermarkY(854, 480, right) == 480 - 23, "Wide-screen watermark stays in the unobstructed bottom-left corner");
         check(HudPlacement.watermarkY(240, 100, right) >= 0, "Watermark stays within a short viewport");
-        check(46 + width(ClientIdentity.NAME, 14, bold) <= 154, "Full client name fits the Minecraft main-menu badge");
         check(54 + width(ClientIdentity.NAME, 17, bold) + 20 < DeckLayout.EDIT.x, "Header name and editor button do not collide");
         check(12 + width("Keystrokes", 10, bold) < DeckLayout.EDITOR_MINUS.x, "Longest module name fits the editor selection group");
         check(width("LMB", 7, bold) <= 35 && width("RMB", 7, bold) <= 35 && width("256 CPS", 7, bold) <= 35,

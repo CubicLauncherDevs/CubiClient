@@ -7,6 +7,7 @@ import dev.cubi.module.HudModule;
 import dev.cubi.module.ModuleRegistry;
 import dev.cubi.ui.ControlDeck;
 import dev.cubi.ui.Ink;
+import dev.cubi.ui.HomeScreen;
 import dev.cubi.performance.FrameCapture;
 import dev.cubi.performance.PerformanceSettings;
 import dev.cubi.performance.VideoSettings;
@@ -20,6 +21,7 @@ public final class CubiClient {
     public final ClientConfig config;
     public final ModuleRegistry modules;
     public final Ink ink;
+    public final HomeScreen home;
     public final ClickWindow left = new ClickWindow(), right = new ClickWindow();
     public final FrameCapture capture = new FrameCapture();
     public Object captureWorld;
@@ -36,6 +38,7 @@ public final class CubiClient {
     public CubiClient() throws Throwable {
         game = new Game189();
         ink = new Ink(game);
+        home = new HomeScreen(this);
         config = ClientConfig.load(game.directory.toPath().resolve("cubiclient/config.json"));
         modules = new ModuleRegistry(config);
         modules.migrateLayout(config, game.width, game.height);
@@ -69,6 +72,7 @@ public final class CubiClient {
         // runTick forwards its current key to a newly opened GuiScreen. Opening here,
         // after that input loop, keeps the opening press from closing the menu again.
         if (menuActivation.take(game.screen())) open();
+        home.tick();
     }
 
     public void key(int key) throws Throwable {

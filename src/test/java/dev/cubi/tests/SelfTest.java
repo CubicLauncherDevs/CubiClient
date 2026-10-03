@@ -38,6 +38,7 @@ public final class SelfTest {
         configuration();
         themeMigration();
         atlasAssets();
+        assertions += HomeTest.run();
         assertions += DeckTest.run();
         assertions += PerformanceTest.run();
         assertions += HudTest.run();
@@ -300,6 +301,12 @@ public final class SelfTest {
                 hook(output, "av", "()V", "frameEnd", 1);
                 hook(output, "av", "()V", "stageBegin", 4);
                 hook(output, "av", "()V", "stageEnd", 4);
+            } else if (name.equals("aya")) {
+                hook(output, "a", "(IIF)V", "homeDraw", 1);
+                hook(output, "a", "(III)V", "homeClick", 1);
+                hook(output, "a", "(CI)V", "homeType", 1);
+                hook(output, "a", "(Lavs;)V", "homeClick", 0);
+                hook(output, "c", "(IIF)V", "homeDraw", 0);
             } else if (name.equals("bec")) {
                 hook(output, "a", "(Lpk;F)V", "particlesBegin", 1);
                 hook(output, "a", "(Lpk;F)V", "particlesEnd", 1);
@@ -318,6 +325,16 @@ public final class SelfTest {
         field(mc, "m", "Laxu;"); field(mc, "f", "Lbdb;");
         field(mc, "h", "Lbew;"); method(mc, "u", "()Lbcy;"); method(mc, "D", "()Lbde;");
         method(mc, "E", "()Z"); method(mc, "ag", "()Lbjh;");
+        method(mc, "t", "()Z");
+        field(node(vanilla, "axu"), "n", "Ljava/util/List;");
+        field(node(vanilla, "avs"), "k", "I");
+        field(node(vanilla, "avs"), "l", "Z"); field(node(vanilla, "avs"), "m", "Z");
+        method(node(vanilla, "aya"), "a", "(Lavs;)V");
+        method(node(vanilla, "aya"), "c", "(IIF)V");
+        field(node(vanilla, "aya"), "B", "Ljy;");
+        method(mc, "P", "()Lbmj;");
+        method(node(vanilla, "bmj"), "a", "(Ljy;)V");
+        method(node(vanilla, "avp"), "b", "(IIIIII)V");
         method(node(vanilla, "pk"), "aK", "()Ljava/util/UUID;");
         method(node(vanilla, "bcy"), "a", "(Ljava/util/UUID;)Lbdc;");
         method(node(vanilla, "bdc"), "c", "()I"); field(node(vanilla, "bde"), "b", "Ljava/lang/String;");

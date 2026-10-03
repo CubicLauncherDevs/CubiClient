@@ -12,6 +12,10 @@ La versión de CubiClient se mantiene en **0.0.1**. Los cambios de interfaz y la
 
 ### Interfaz organizada
 
+La **pantalla de inicio** recupera el panorama animado, el logo y la tipografía de Minecraft. Una columna centrada reúne **Un jugador**, **Multijugador** y **Personalizar HUD**, con Opciones/Salir debajo y accesos secundarios a Idioma/Realms. El nuevo icono y el nombre de CubiClient acompañan al logo; los botones rectangulares usan tonos oscuros y un resaltado suave. Los paquetes de recursos se abren desde Opciones. Realms conserva la disponibilidad que determine Minecraft; en modo demo aparecen las acciones originales de jugar/restablecer demo.
+
+Puedes usar el ratón o **Tab / Mayús+Tab / flechas** para recorrer los controles y **Enter / Espacio** para activarlos. El primer Tab selecciona Un jugador y el recorrido sigue el orden visual. Esc quita el foco; Shift derecho (o tu atajo configurado) abre Personalizar. El inicio se adapta a la resolución y a la escala GUI, manteniendo el tamaño natural de los controles en ventanas habituales.
+
 La organización toma como referencia la separación entre módulos y ajustes de clientes como Lunar, conservando el tema oscuro de CubicLauncher:
 
 - **Módulos:** cuatro tarjetas por página en una cuadrícula 2 × 2, con activación independiente, engranaje y vista previa lateral. Los seis widgets se distribuyen en dos páginas.
@@ -24,7 +28,7 @@ El nombre **CubiClient** aparece completo en la HUD, el menú y el título de ve
 
 ### Tema Cubic · Oscuro
 
-La HUD, el menú y el editor comparten Cantarell Regular/Bold, fondos neutros, bordes finos y acento blanco. Los valores visuales se toman como referencia del [tema Oscuro de CubicLauncher](https://github.com/CubicLauncherDevs/CubicLauncher/blob/c7b6ecb408472964158a3757b7fd7cabb4af8e42/static/themes/dark/dark.json): fondo `#0C0C0C`, tarjetas `#16161A`, bordes `#242424` y texto `#D8D8D8`.
+La HUD, el panel de personalización y el editor comparten Cantarell Regular/Bold, fondos neutros, bordes finos y acento blanco. El inicio utiliza la tipografía de Minecraft. Los valores visuales se toman como referencia del [tema Oscuro de CubicLauncher](https://github.com/CubicLauncherDevs/CubicLauncher/blob/c7b6ecb408472964158a3757b7fd7cabb4af8e42/static/themes/dark/dark.json): fondo `#0C0C0C`, tarjetas `#16161A`, bordes `#242424` y texto `#D8D8D8`.
 
 Los botones primarios son blancos; las opciones usan casillas con marca de verificación y deslizadores discretos. Las teclas del HUD se iluminan en blanco con texto oscuro al pulsarlas. Los acentos azul, lavanda y melocotón siguen disponibles como personalizaciones opcionales.
 
@@ -48,7 +52,7 @@ La apertura con Shift derecho se aplica al terminar el procesamiento de entrada 
 | **Configuración** | JSON versionado, escritura atómica y copia de recuperación si está dañado |
 | **Optimización** | Culling conservador de partículas estándar, dibujo del HUD agrupado y resolución GUI cacheada |
 | **Diagnóstico** | Captura opcional de FPS, p95/p99, etapas del bucle y memoria/GC, con exportación JSON |
-| **Integración** | Marca en el menú principal, título de ventana y pantalla real de Minecraft |
+| **Integración** | Inicio clásico con panorama y logo de Minecraft, identidad CubiClient y pantallas reales del juego |
 
 La base conserva el motor de Minecraft 1.8.9 y añade descarte de partículas estándar fuera de cámara, además de reducir el trabajo propio del HUD. Los perfiles permiten ajustar el coste visual a distintos equipos. Consulta [rendimiento y perfiles](docs/PERFORMANCE.md) para conocer cada ajuste, restaurar valores anteriores y comparar capturas. Las ganancias de FPS requieren mediciones A/B; todavía no hay una comparación validada con Lunar.
 
@@ -177,6 +181,8 @@ La entrega de rendimiento pasó **235 comprobaciones Java**, verificación JVM d
 La integración posterior de CPS en Keystrokes pasó **236 comprobaciones Java**, enlace JVM y las **7 pruebas Python**; no se repitió la prueba gráfica para este ajuste.
 
 La primera entrega de los cuatro módulos básicos y la paginación pasó **301 comprobaciones Java**, enlace JVM del jar final y **7 pruebas Python**. El ajuste posterior de tamaños, armadura vertical/transparente e icono de servidor se compiló con `python3 tools/build.py --replacement`, sin ejecutar pruebas por petición del usuario. Las comprobaciones anteriores no cubren este ajuste; la revisión gráfica sigue pendiente.
+
+El inicio clásico renovado pasa **369 comprobaciones Java**, validación del jar, enlace JVM y **7 pruebas Python**. Se actualizaron las expectativas antiguas de paginación, opacidad y posición de armadura. La revisión gráfica del inicio y los ajustes visuales anteriores sigue pendiente; esta entrega no ha abierto Minecraft.
 
 Consulta [verificación y rendimiento](docs/VERIFICATION.md) para el alcance real de las comprobaciones y [arquitectura](docs/ARCHITECTURE.md) para ampliar el cliente.
 

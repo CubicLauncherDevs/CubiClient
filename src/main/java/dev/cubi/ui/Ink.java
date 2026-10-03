@@ -18,6 +18,14 @@ public final class Ink {
     public void beginBatch() { atlas.beginBatch(); }
     public void endBatch() throws Throwable { atlas.endBatch(); }
     public void item(Object stack, int x, int y) throws Throwable { atlas.flush(); game.item(stack, x, y); }
+    public void minecraftText(String text, float x, float y, int color) throws Throwable {
+        atlas.flush();
+        try { game.text(text, x, y, tint(color)); }
+        finally { game.finishInk(); }
+    }
+    public void minecraftTitle(Object parent, int x, int y) throws Throwable {
+        atlas.flush(); game.minecraftTitle(parent, x, y);
+    }
     public void image(int texture, float x, float y, float size) throws Throwable {
         atlas.flush();
         game.textureInk(texture, tint(0xFFFFFFFF));

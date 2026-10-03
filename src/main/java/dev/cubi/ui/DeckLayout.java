@@ -44,6 +44,40 @@ public final class DeckLayout {
     public static int editorX(int width) { return (width - EDITOR_WIDTH) / 2; }
     public static int editorY(int height) { return height - EDITOR_HEIGHT - 10; }
 
+    /** Full-screen home canvas; draw and input share the same scale and regions. */
+    public static final class Home {
+        // Keyboard traversal follows the visual order, beginning with Singleplayer.
+        public static final int PLAY = 0, SERVERS = 1, CUSTOMIZE = 2, OPTIONS = 3,
+                QUIT = 4, LANGUAGE = 5, REALMS = 6, COUNT = 7;
+        public final float scale;
+        public final int width, height;
+        public final Rect title;
+        public final int brandY;
+        public final Rect[] controls = new Rect[COUNT];
+
+        public Home(int screenWidth, int screenHeight) {
+            scale = Math.min(1, Math.min(Math.max(1, screenWidth) / 320f, Math.max(1, screenHeight) / 260f));
+            width = Math.round(screenWidth / scale); height = Math.round(screenHeight / scale);
+            int x = width / 2 - 110;
+            int top = Math.max(10, (height - 238) / 2);
+            title = new Rect(width / 2 - 155, top, 310, 44);
+            brandY = top + 52;
+            controls[PLAY] = new Rect(x, top + 84, 220, 20);
+            controls[SERVERS] = new Rect(x, top + 108, 220, 20);
+            controls[CUSTOMIZE] = new Rect(x, top + 132, 220, 20);
+            controls[OPTIONS] = new Rect(x, top + 160, 108, 20);
+            controls[QUIT] = new Rect(x + 112, top + 160, 108, 20);
+            controls[LANGUAGE] = new Rect(x + 20, top + 188, 86, 18);
+            controls[REALMS] = new Rect(x + 114, top + 188, 86, 18);
+        }
+
+        public int hit(float screenX, float screenY) {
+            float x = screenX / scale, y = screenY / scale;
+            for (int i = 0; i < controls.length; i++) if (controls[i].contains(x, y)) return i;
+            return -1;
+        }
+    }
+
     public static final class Rect {
         public final int x, y, w, h;
         public Rect(int x, int y, int w, int h) { this.x = x; this.y = y; this.w = w; this.h = h; }

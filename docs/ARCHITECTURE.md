@@ -37,12 +37,12 @@ En este formato alternativo, el transformador se ejecuta al cargar las clases. A
 | `ave` / Minecraft | `func_71407_l` / `s()V` | Actualización por tick; captura de eventos de `Mouse.next()` |
 | `ave` / Minecraft | `func_152348_aa` / `Z()V` | Teclado, filtrando repetición y eventos ya consumidos por el menú |
 | `avo` / GuiIngame | `func_175180_a` / `a(F)V` | Dibujo del HUD al final del overlay vanilla |
-| `aya` / GuiMainMenu | `func_73863_a` / `a(IIF)V` | Marca de Cubi en el menú principal |
+| `aya` / GuiMainMenu | `a(IIF)V`, `a(III)V`, `a(CI)V` | Inicio completo: dibujo, clics y teclado; retorno temprano cuando Cubi gestiona el evento |
 | `ave` / Minecraft | `av()V` | Captura opcional del fotograma y etapas: tick, render, presentación y limitador |
 | `bec` / EffectRenderer | `a(Lpk;F)V` | Delimita la pasada normal de partículas elegible para culling |
 | `beb` / EntityFX | `a(Lbfd;Lpk;FFFFFF)V` | Retorno temprano para billboards estándar totalmente fuera de cámara |
 
-Las firmas se contrastan con el `.jar` oficial en `SelfTest`. El transformador conserva las formas de la pila y los stack frames originales; recalcula máximos y emite un frame explícito para la rama nueva al entrar en `beb`. Si falta un punto de integración esperado o ya hay hooks, falla. `--replacement --test` también enlaza las clases finales bajo `-Xverify:all` con las bibliotecas vanilla, sin inicializar el juego ni abrir una ventana.
+Las firmas se contrastan con el `.jar` oficial en `SelfTest`. El transformador conserva las formas de la pila y los stack frames originales; recalcula máximos y emite frames explícitos para las ramas nuevas al entrar en `beb` y los callbacks de `aya`. Si falta un punto de integración esperado o ya hay hooks, falla. `--replacement --test` también enlaza las clases finales bajo `-Xverify:all` con las bibliotecas vanilla, sin inicializar el juego ni abrir una ventana.
 
 ## Adaptador de Minecraft
 
@@ -61,6 +61,16 @@ Con `hudBatching`, cada widget agrupa su geometría del atlas entre la aplicaci�
 `UiAssets` rasteriza Cantarell Regular/Bold a 36 píxeles y los iconos de controles durante la compilación. La marca procede de `docs/assets/newClientIcon.png`: se reduce a una celda de 64 × 64 del atlas y se dibuja mediante `Ink.logo` sin teñir sus colores. También genera PNG de 16, 32 y 128 píxeles que `ClientIcon` carga una sola vez para `Display.setIcon`. Comprueba la familia de la fuente y que los glifos quepan en sus celdas. Produce `atlas.png` de 2048 × 1024, métricas binarias y una copia de la licencia OFL. El runtime carga una sola textura (8 MiB RGBA), reutilizada durante toda la sesión. No genera glifos, imágenes o geometría curva por fotograma. Los fondos y los bordes usan máscaras de nueve secciones; la máscara del borde tiene un centro transparente para no rellenar de nuevo los widgets translúcidos. Las animaciones usan tiempo transcurrido, no incrementos por FPS.
 
 ## Ciclo de vida y módulos
+
+### Pantalla de inicio
+
+`HomeScreen` presenta un menú clásico centrado con siete controles. `DeckLayout.Home` comparte escala y regiones entre dibujo, clics y pruebas; su lienzo mínimo de 320×260 mantiene la legibilidad en ventanas pequeñas. `HomeState` gestiona foco, controles deshabilitados y una única acción pendiente por tick. El recorrido empieza en Un jugador y sigue el orden visual. Los clics y el teclado del inicio no llegan a los botones vanilla ocultos mientras Cubi gestiona la pantalla. Si falla la integración, los callbacks permiten recuperar el menú vanilla.
+
+`Game189.menuPanorama` invoca el renderer original `aya.c(IIF)V` antes de aplicar la escala del menú, pasando los ticks parciales para conservar la animación. El panorama mantiene su actualización vanilla y restaura profundidad, alpha y blending mediante handles cacheados. El logo usa la textura original `aya.B` a través del gestor de texturas vanilla y los dos rectángulos de `Gui.b(IIIIII)V`. `Ink.minecraftTitle` y `Ink.minecraftText` vacían el atlas antes de dibujar el logo o el texto con la fuente del juego, respetando los paquetes de recursos. El icono propio sigue usando `Ink.logo`.
+
+`Game189` conserva la inicialización de `aya` y ejecuta su `a(avs)` con los botones originales, respetando visibilidad, disponibilidad de Realms y modo demo. Recursos queda en la pantalla vanilla de Opciones. Personalizar conserva el mismo padre mediante `ControlDeck.open`. Todas las acciones que cambian pantallas se consumen en `HomeScreen.tick`, al final de `CubiClient.tick`; se cancelan si la pantalla original ya no es la actual.
+
+### Actualización del cliente
 
 Todo el estado del cliente se usa desde el hilo principal de Minecraft. Hay tres fases explícitas:
 

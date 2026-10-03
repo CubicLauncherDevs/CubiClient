@@ -18,7 +18,7 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
         if (bytes == null || !(name.equals("ave") || name.equals("avo") || name.equals("aya")
                 || name.equals("bec") || name.equals("beb"))) return bytes;
         final String target = name;
-        final int[] matches = new int[11];
+        final int[] matches = new int[13];
         ClassReader reader = new ClassReader(bytes);
         // Hooks preserve stack shapes; existing frames remain valid without hierarchy loading.
         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
@@ -29,13 +29,17 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                 final boolean tick = target.equals("ave") && method.equals("s") && desc.equals("()V");
                 final boolean key = target.equals("ave") && method.equals("Z") && desc.equals("()V");
                 final boolean hud = target.equals("avo") && method.equals("a") && desc.equals("(F)V");
-                final boolean brand = target.equals("aya") && method.equals("a") && desc.equals("(IIF)V");
+                final boolean homeDraw = target.equals("aya") && method.equals("a") && desc.equals("(IIF)V");
+                final boolean homeClick = target.equals("aya") && method.equals("a") && desc.equals("(III)V");
+                final boolean homeType = target.equals("aya") && method.equals("a") && desc.equals("(CI)V");
                 final boolean frame = target.equals("ave") && method.equals("av") && desc.equals("()V");
                 final boolean particlePass = target.equals("bec") && method.equals("a") && desc.equals("(Lpk;F)V");
                 final boolean particle = target.equals("beb") && method.equals("a") && desc.equals("(Lbfd;Lpk;FFFFFF)V");
                 if (tick) matches[0]++;
                 if (key) matches[1]++;
-                if (hud || brand) matches[2]++;
+                if (hud || homeDraw) matches[2]++;
+                if (homeClick) matches[11]++;
+                if (homeType) matches[12]++;
                 if (frame) matches[4]++;
                 if (particlePass) matches[9]++;
                 if (particle) matches[10]++;
@@ -43,6 +47,19 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                     @Override
                     public void visitCode() {
                         super.visitCode();
+                        if (homeDraw || homeClick || homeType) {
+                            super.visitVarInsn(ALOAD, 0);
+                            super.visitVarInsn(ILOAD, 1);
+                            super.visitVarInsn(ILOAD, 2);
+                            if (!homeType) super.visitVarInsn(homeDraw ? FLOAD : ILOAD, 3);
+                            call(homeDraw ? "homeDraw" : homeClick ? "homeClick" : "homeType",
+                                    homeDraw ? "(Ljava/lang/Object;IIF)Z" : homeClick ? "(Ljava/lang/Object;III)Z" : "(Ljava/lang/Object;CI)Z");
+                            Label vanilla = new Label();
+                            super.visitJumpInsn(IFEQ, vanilla);
+                            super.visitInsn(RETURN);
+                            super.visitLabel(vanilla);
+                            super.visitFrame(F_SAME, 0, null, 0, null);
+                        }
                         if (key) call("key", "()V");
                         if (frame) call("frameBegin", "()V");
                         if (particlePass) call("particlesBegin", "()V");
@@ -85,7 +102,6 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
                         if (opcode == RETURN) {
                             if (tick) call("tick", "()V");
                             if (hud) call("hud", "()V");
-                            if (brand) call("brand", "()V");
                             if (frame) call("frameEnd", "()V");
                             if (particlePass) call("particlesEnd", "()V");
                         }
@@ -104,6 +120,7 @@ public final class CubiTransformer implements IClassTransformer, Opcodes {
         }, 0);
         boolean valid = target.equals("ave") ? matches[0] == 1 && matches[1] == 1 && matches[3] == 1
                 && matches[4] == 1 && matches[5] == 1 && matches[6] == 1 && matches[7] == 1 && matches[8] == 1
+                : target.equals("aya") ? matches[2] == 1 && matches[11] == 1 && matches[12] == 1
                 : target.equals("bec") ? matches[9] == 1 : target.equals("beb") ? matches[10] == 1 : matches[2] == 1;
         if (!valid) throw new IllegalStateException("CubiClient: bytecode incompatible para " + target + "; usa vanilla 1.8.9");
         System.out.println("[Cubi] Hooks 1.8.9 instalados: " + name);

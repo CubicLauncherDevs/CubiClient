@@ -90,8 +90,8 @@ public final class HudTest {
             check(loaded.state("ping").x == 0.33f && loaded.state("ping").y == 0.47f
                     && loaded.state("ping").key == 40 && loaded.state("ping").opacity == 0.7f,
                     "Already configured new modules are not reset");
-            check(registry.all[3].x(854) == 706 && registry.all[3].y(480) == 58
-                    && registry.all[4].y(480) == 108 && registry.all[5].y(480) == 12,
+            check(registry.all[3].x(854) == 778 && registry.all[3].y(480) == 44
+                    && registry.all[4].y(480) == 44 && registry.all[5].y(480) == 12,
                     "Only missing modules receive default placement");
             registry.all[3].position(200, 150, 854, 480);
             registry.migrateLayout(loaded, 854, 480);

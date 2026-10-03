@@ -2,6 +2,31 @@
 
 Versión del cliente: **0.0.1**. Los apartados históricos describen etapas de desarrollo, no incrementos de versión.
 
+## Inicio clásico renovado · 2026-10-02
+
+Se recuperan el panorama animado, el logo y la fuente de Minecraft. Las acciones forman una columna central; hay un único acceso a Personalizar HUD, Opciones/Salir debajo y enlaces secundarios a Idioma/Realms. Los recursos se abren desde Opciones.
+
+- `python3 tools/build.py --replacement --test`: **369 comprobaciones Java correctas**, validación del jar de reemplazo y enlace JVM `-Xverify:all`.
+- `python3 -m unittest discover -s tools -p 'test_*.py'`: **7 pruebas correctas**.
+- `HomeTest`: título, marca, columna de acciones y pie dentro de sus límites, controles sin solapamientos y clics correctos en siete tamaños; tamaño natural de botones en resoluciones habituales y foco inicial en Un jugador, seguido de Multijugador y Personalizar HUD.
+- `SelfTest`: bindings del panorama privado, textura del logo, gestor de texturas y dibujo de sus dos piezas contrastados con el jar original. Comprueba que el renderer del panorama no reciba el hook del inicio, evitando recursión.
+- Artefacto actualizado: `dist/replacement/minecraft.jar`.
+
+**Revisión gráfica pendiente:** no se ha abierto Minecraft. Queda comprobar el panorama y logo en pantalla, la lectura de la tipografía vanilla, el hover/foco y el regreso desde las pantallas del juego. Las capturas históricas no representan este diseño.
+
+## Inicio inspirado en CubicLauncher · 2026-10-02
+
+Se sustituye la presentación del menú principal por un inicio completo con barra lateral, bienvenida, acciones de juego y tarjetas de personalización. El nuevo icono conserva sus colores. Los botones usan las acciones vanilla y las transiciones se difieren al final del tick.
+
+- `python3 tools/build.py --replacement --test`: **349 comprobaciones Java correctas**, validación del jar de reemplazo y enlace JVM `-Xverify:all` con bibliotecas vanilla.
+- `python3 -m unittest discover -s tools -p 'test_*.py'`: **7 pruebas correctas**.
+- `HomeTest`: controles sin solapamientos, límites y correspondencia de clics a 320×240, 426×240, 600×360, 854×480, 1920×1080, 3440×1440 y 240×320; foco cíclico, controles deshabilitados, cancelación al cambiar de pantalla y una única acción por tick. Inspecciona el bytecode para comprobar que clics/teclas encolan las transiciones y que las repeticiones tienen guarda.
+- `SelfTest`: verifica los tres hooks de inicio y los nuevos bindings para botones, acciones, demo y constructor de Recursos contra el jar original.
+- Se corrigen las expectativas históricas de `DeckTest` (dos páginas de cuatro tarjetas y opacidad desde 0%) y `HudTest` (posición de armadura vertical). La suite completa vuelve a pasar.
+- Artefacto actualizado: `dist/replacement/minecraft.jar`.
+
+**Pendiente de verificación gráfica:** no se abre Minecraft ni se ejecuta el smoke en esta entrega. Falta comprobar visualmente el inicio, hover/foco, regreso desde las pantallas vanilla y Personalizar, Realms/demo y el icono de ventana. Las capturas históricas no representan este inicio.
+
 ## Nuevo icono del cliente · 2026-10-02
 
 Se integra `docs/assets/newClientIcon.png` en el atlas (menú y HUD), los iconos de ventana y el README, conservando sus colores originales.

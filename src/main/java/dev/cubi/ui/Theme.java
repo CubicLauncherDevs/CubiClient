@@ -9,6 +9,8 @@ public final class Theme {
     public static final String NAME = "Cubic · Oscuro";
     public static final String FONT = "Cantarell";
     public static final int BACKGROUND = 0xFF0C0C0C, SIDEBAR = 0xFF0F1010;
+    public static final int HOME_OVERLAY = 0x40000000, HOME_BUTTON = 0xD916161A, HOME_BUTTON_HOVER = 0xED303034;
+    public static final int HOME_EDGE = 0xFF626268, HOME_TEXT = 0xFFFFFFFF;
     public static final int CARD = 0xFF16161A, SELECTED = 0xFF1C1D1D, INPUT = 0xFF1C1C1C;
     public static final int TEXT = 0xFFD8D8D8, SECONDARY = 0xFF909090, MUTED = 0xFF787878;
     public static final int BORDER = 0xFF242424, BORDER_HOVER = 0xFF383838, BORDER_FOCUS = 0xFF777777;

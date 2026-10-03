@@ -23,6 +23,8 @@ La paleta y el estilo de los controles toman como referencia [CubicLauncher](htt
 - `src/styles/shared/components.css`: botones primarios/secundarios y etiquetas.
 - `src/lib/components/settings/controls.css`: casillas de verificación y deslizadores.
 
+La primera propuesta de inicio consultó la distribución de la rama `develop` el 2026-10-02: `src/routes/+page.svelte`, `src/lib/components/layout/Sidebar/Sidebar.svelte` y `src/lib/components/instances/InstanceView/InstanceView.svelte`. La revisión actual vuelve al menú clásico centrado, conservando la paleta oscura como referencia. El panorama, el logo de Minecraft y la fuente del inicio se dibujan con los renderers y recursos vanilla presentes en la instalación del juego.
+
 El repositorio de referencia se publica bajo GPL-3.0-only. CubiClient implementa sus propios componentes Java/OpenGL y conserva su propia marca; no incorpora el frontend Svelte ni los binarios de CubicLauncher.
 
 Los nombres de referencia SRG se contrastaron con los mappings **MCP 1.8.9**, publicados en:

@@ -5,6 +5,7 @@ import dev.cubi.performance.ResolutionCache;
 import dev.cubi.performance.VideoSettings;
 import dev.cubi.module.HudValues;
 import java.util.UUID;
+import java.util.List;
 import org.lwjgl.opengl.GL11;
 import java.io.File;
 import java.lang.invoke.MethodHandle;
@@ -41,6 +42,9 @@ public final class Game189 {
     private final MethodHandle itemById;
     private final Constructor<?> itemStack;
     private final Object[] previewArmor = new Object[4];
+    private final MethodHandle menuButtons, buttonId, buttonEnabled, buttonVisible, menuAction, demo;
+    private final MethodHandle menuPanorama, bindResource, texturedRect;
+    private final Object textureManager, titleTexture;
     public final File directory;
     public int width = 854, height = 480;
 
@@ -104,6 +108,20 @@ public final class Game189 {
         depthMask = handle(type("bfl"), "a", boolean.class); disableRescale = handle(type("bfl"), "C");
         itemById = handle(type("zw"), "b", int.class).asType(MethodType.methodType(Object.class, int.class));
         itemStack = stack.getConstructor(type("zw"));
+        menuButtons = getter(gui, "n", List.class);
+        buttonId = getter(type("avs"), "k", int.class);
+        buttonEnabled = getter(type("avs"), "l", boolean.class);
+        buttonVisible = getter(type("avs"), "m", boolean.class);
+        menuAction = handle(type("aya"), "a", type("avs"))
+                .asType(MethodType.methodType(void.class, Object.class, Object.class));
+        demo = virtual(mc, "t", boolean.class);
+        menuPanorama = virtual(type("aya"), "c", void.class, int.class, int.class, float.class);
+        textureManager = (Object) virtual(mc, "P", Object.class).invokeExact(minecraft);
+        titleTexture = field(type("aya"), "B").get(null);
+        bindResource = handle(type("bmj"), "a", type("jy"))
+                .asType(MethodType.methodType(void.class, Object.class, Object.class));
+        texturedRect = virtual(type("avp"), "b", void.class,
+                int.class, int.class, int.class, int.class, int.class, int.class);
         resize();
     }
 
@@ -285,6 +303,45 @@ public final class Game189 {
                     ParticleVisibility.center((double) pz.invokeExact(p), (double) z.invokeExact(p), partial, cz),
                     (float) size.invokeExact(p), rx, rxz, rz, ryz, rxy);
         }
+    }
+
+    private Object menuButton(Object parent, int id) throws Throwable {
+        List<?> buttons = (List<?>) menuButtons.invokeExact(parent);
+        for (Object button : buttons) if ((int) buttonId.invokeExact(button) == id) return button;
+        return null;
+    }
+    public boolean menuEnabled(Object parent, int id) throws Throwable {
+        Object button = menuButton(parent, id);
+        return button != null && (boolean) buttonEnabled.invokeExact(button) && (boolean) buttonVisible.invokeExact(button);
+    }
+    /** Reuse the initialized vanilla button, including demo/Realms availability and return parent. */
+    public void menuAction(Object parent, int id) throws Throwable {
+        if (screen() != parent || !menuEnabled(parent, id)) return;
+        Object button = menuButton(parent, id);
+        menuAction.invokeExact(parent, button);
+    }
+    public boolean demo() throws Throwable { return (boolean) demo.invokeExact(minecraft); }
+    /** Vanilla's animated/blurred panorama, at the real GUI size before any home scaling. */
+    public void menuPanorama(Object parent, int mouseX, int mouseY, float partial) throws Throwable {
+        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST), writeDepth = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        disableAlpha.invokeExact();
+        try { menuPanorama.invokeExact(parent, mouseX, mouseY, partial); }
+        finally {
+            if (depth) enableDepth.invokeExact(); else disableDepth.invokeExact();
+            depthMask.invokeExact(writeDepth);
+            finishInk();
+        }
+    }
+    /** The original two-part title texture, including resource-pack replacements. */
+    public void minecraftTitle(Object parent, int x, int y) throws Throwable {
+        enableTexture.invokeExact(); enableAlpha.invokeExact(); enableBlend.invokeExact();
+        blendFunction.invokeExact(770, 771, 1, 0);
+        white();
+        try {
+            bindResource.invokeExact(textureManager, titleTexture);
+            texturedRect.invokeExact(parent, x, y, 0, 0, 155, 44);
+            texturedRect.invokeExact(parent, x + 155, y, 0, 45, 155, 44);
+        } finally { finishInk(); }
     }
 
     public Object screen() throws IllegalAccessException { return screen.get(minecraft); }

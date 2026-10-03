@@ -1,7 +1,5 @@
 package dev.cubi.core;
 
-import dev.cubi.ui.Ink;
-import dev.cubi.ui.Theme;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -112,16 +110,30 @@ public final class Hooks {
         error.printStackTrace();
     }
 
-    public static void brand() {
+    public static boolean homeDraw(Object screen, int x, int y, float partial) {
         try {
             CubiClient c = client();
-            if (c == null) return;
-            c.ink.round(10, 10, 154, 37, Theme.CARD_RADIUS, Ink.alpha(Theme.BACKGROUND, 0.75f));
-            c.ink.border(10, 10, 154, 37, Theme.CARD_RADIUS, Theme.BORDER);
-            c.ink.logo(19, 19, 19);
-            c.ink.text(ClientIdentity.NAME, 46, 17, 14, true, Ink.WHITE);
-            c.ink.small(Keyboard.getKeyName(c.config.menuKey) + "  /  Personalizar", 46, 34, Ink.MUTED);
-            c.game.white();
+            if (c == null) return false;
+            c.home.draw(screen, x, y, partial);
+            return true;
+        } catch (Throwable error) { fail(error); return false; }
+    }
+
+    public static boolean homeClick(Object screen, int x, int y, int button) {
+        try {
+            CubiClient c = client();
+            if (c == null) return false;
+            c.home.click(screen, x, y, button);
         } catch (Throwable error) { fail(error); }
+        return true; // Never pass the failing click through to hidden vanilla buttons.
+    }
+
+    public static boolean homeType(Object screen, char character, int key) {
+        try {
+            CubiClient c = client();
+            if (c == null) return false;
+            c.home.type(screen, key);
+        } catch (Throwable error) { fail(error); }
+        return true;
     }
 }
