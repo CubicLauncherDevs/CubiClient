@@ -20,6 +20,13 @@ public final class UiAssets {
     public static void main(String[] args) throws Exception {
         Path output = Paths.get(args[0]).resolve("assets/cubi/ui");
         Files.createDirectories(output);
+        BufferedImage logo = ImageIO.read(Paths.get(args[3]).toFile());
+        if (logo == null || logo.getWidth() != logo.getHeight()) {
+            throw new IllegalArgumentException("Expected a square client icon");
+        }
+        for (int size : new int[] {16, 32, 128}) {
+            ImageIO.write(resize(logo, size), "png", output.resolve("icon-" + size + ".png").toFile());
+        }
         BufferedImage image = new BufferedImage(2048, 1024, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -53,10 +60,7 @@ public final class UiAssets {
         g.fillRoundRect(0, 960, 64, 64, 32, 32);
         g.setStroke(new BasicStroke(3.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.translate(64, 960);
-        Path2D cube = new Path2D.Float();
-        cube.moveTo(32, 6); cube.lineTo(54, 19); cube.lineTo(54, 45); cube.lineTo(32, 58);
-        cube.lineTo(10, 45); cube.lineTo(10, 19); cube.closePath();
-        g.draw(cube); g.drawLine(10, 19, 32, 32); g.drawLine(54, 19, 32, 32); g.drawLine(32, 32, 32, 58);
+        g.drawImage(resize(logo, 64), 0, 0, null);
         g.translate(64, 0);
         g.drawRoundRect(7, 12, 50, 36, 7, 7); g.drawLine(25, 56, 39, 56); g.drawLine(32, 48, 32, 56);
         Path2D graph = new Path2D.Float();
@@ -100,6 +104,20 @@ public final class UiAssets {
         g.dispose();
         ImageIO.write(image, "png", output.resolve("atlas.png").toFile());
     }
+    private static BufferedImage resize(BufferedImage source, int size) {
+        // Reduce in steps so the fine edges remain smooth at HUD/window sizes.
+        do {
+            int next = Math.max(size, source.getWidth() / 2);
+            BufferedImage resized = new BufferedImage(next, next, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = resized.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.drawImage(source, 0, 0, next, next, null);
+            g.dispose();
+            source = resized;
+        } while (source.getWidth() > size);
+        return source;
+    }
+
     private static void armorIcon(Graphics2D g, int slot) {
         Path2D shape = new Path2D.Float();
         int[][] points;

@@ -42,7 +42,7 @@ public final class ModuleRegistry {
             boolean batch = client.config.performance.hudBatching;
             if (batch) client.ink.beginBatch();
             try {
-                client.ink.icon(0, 12, y, 13, client.accent());
+                client.ink.logo(12, y, 13);
                 client.ink.text(ClientIdentity.NAME, 29, y + 2, 10, true, Theme.TEXT);
             } finally { if (batch) client.ink.endBatch(); }
         }

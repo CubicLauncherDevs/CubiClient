@@ -56,7 +56,7 @@ def main():
     subprocess.run(prepare, check=True)
     subprocess.run([java_tool("java"), "-Djava.awt.headless=true", "-cp", str(build_classes),
                     "dev.cubi.build.UiAssets", str(classes), str(font_asset("Cantarell-Regular.ttf")),
-                    str(font_asset("Cantarell-Bold.ttf"))], check=True)
+                    str(font_asset("Cantarell-Bold.ttf")), str(ROOT / "docs/assets/newClientIcon.png")], check=True)
     shutil.copyfile(font_asset("OFL.txt"), classes / "assets/cubi/ui/OFL-Cantarell.txt")
     distribution = ROOT / "dist" / ("cubiclient-" + VERSION + ".jar")
     distribution.parent.mkdir(parents=True, exist_ok=True)

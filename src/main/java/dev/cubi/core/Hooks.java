@@ -118,7 +118,7 @@ public final class Hooks {
             if (c == null) return;
             c.ink.round(10, 10, 154, 37, Theme.CARD_RADIUS, Ink.alpha(Theme.BACKGROUND, 0.75f));
             c.ink.border(10, 10, 154, 37, Theme.CARD_RADIUS, Theme.BORDER);
-            c.ink.icon(0, 19, 19, 19, c.accent());
+            c.ink.logo(19, 19, 19);
             c.ink.text(ClientIdentity.NAME, 46, 17, 14, true, Ink.WHITE);
             c.ink.small(Keyboard.getKeyName(c.config.menuKey) + "  /  Personalizar", 46, 34, Ink.MUTED);
             c.game.white();

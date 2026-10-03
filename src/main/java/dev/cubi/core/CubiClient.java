@@ -42,6 +42,7 @@ public final class CubiClient {
         reconcilePerformance();
         config.save();
         Display.setTitle(ClientIdentity.NAME + " | " + ClientIdentity.MINECRAFT);
+        ClientIcon.apply();
         System.out.println("[Cubi] Interfaz renovada lista. Abre el menú con tu tecla configurada (RSHIFT por defecto).");
     }
 

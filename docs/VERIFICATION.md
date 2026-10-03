@@ -2,6 +2,17 @@
 
 Versión del cliente: **0.0.1**. Los apartados históricos describen etapas de desarrollo, no incrementos de versión.
 
+## Nuevo icono del cliente · 2026-10-02
+
+Se integra `docs/assets/newClientIcon.png` en el atlas (menú y HUD), los iconos de ventana y el README, conservando sus colores originales.
+
+- `python3 tools/build.py --replacement --test`: compila con Java 8 y supera las comprobaciones del atlas; se detiene en `DeckTest.navigation` porque todavía espera tres páginas de módulos, frente a las dos actuales. La suite Java completa sigue pendiente.
+- `python3 -m unittest discover -s tools -p 'test_*.py'`: **7 pruebas correctas**.
+- `python3 tools/build.py --replacement`: genera `dist/replacement/minecraft.jar` y valida sus recursos, incluidos los tres PNG de ventana.
+- Se ejecuta `verify_runtime` por separado: enlace JVM `-Xverify:all` correcto.
+
+No se ha abierto Minecraft; queda pendiente la comprobación gráfica del icono en el juego y en la ventana.
+
 ## Ajuste visual posterior · 2026-09-20
 
 El navegador muestra ahora cuatro tarjetas por página (2 × 2), con vistas previas laterales y dos páginas para los seis módulos. Este cambio también se compila sin ejecutar pruebas; las expectativas anteriores de paginación quedan pendientes de adaptar.

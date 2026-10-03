@@ -61,7 +61,7 @@ public final class Ink {
         rect(x, y, w, 1, color); rect(x, y + h - 1, w, 1, color);
         rect(x, y, 1, h, color); rect(x + w - 1, y, 1, h, color);
     }
-    public void logo(int x, int y, int size) throws Throwable { icon(0, x, y, size, Theme.ACCENT); }
+    public void logo(int x, int y, int size) throws Throwable { icon(0, x, y, size, 0xFFFFFFFF); }
     public void icon(int id, float x, float y, float size, int color) throws Throwable { atlas.icon(id, x, y, size, tint(color)); }
     public void button(String label, int x, int y, int w, int h, boolean hover, boolean primary) throws Throwable {
         button(label, x, y, w, h, hover, primary, Theme.ACCENT);

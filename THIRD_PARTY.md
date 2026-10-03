@@ -13,7 +13,7 @@ La biblioteca `dist/cubiclient-0.0.1.jar` contiene el código propio del cliente
 
 Los SHA-1 de las dependencias de compilación están fijados en `tools/common.py`. Los hashes de los artefactos originales de Minecraft proceden de su manifiesto. Los hashes comprueban integridad y coincidencia de versión.
 
-La fuente se rasteriza al compilar; el atlas y sus métricas se incluyen en ambos jars. La licencia se incluye en `assets/cubi/ui/OFL-Cantarell.txt`. Se utiliza la distribución estática TTF de Cantarell para generar el atlas con Java 8; no se cargan las fuentes WOFF2 del launcher en el juego. Los iconos, la marca de Cubi y las máscaras de controles se dibujan con código propio en `UiAssets`.
+La fuente se rasteriza al compilar; el atlas y sus métricas se incluyen en ambos jars. La licencia se incluye en `assets/cubi/ui/OFL-Cantarell.txt`. Se utiliza la distribución estática TTF de Cantarell para generar el atlas con Java 8; no se cargan las fuentes WOFF2 del launcher en el juego. Los iconos de controles y las máscaras se dibujan con código propio en `UiAssets`. La marca del cliente procede de `docs/assets/newClientIcon.png`, aportada al proyecto; `UiAssets` la reduce para el atlas y los iconos de ventana.
 
 ## Referencia visual de CubicLauncher
 

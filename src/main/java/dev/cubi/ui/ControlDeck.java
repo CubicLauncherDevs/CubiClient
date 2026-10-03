@@ -75,7 +75,7 @@ public final class ControlDeck {
             GL11.glTranslatef(originX, originY, 0); GL11.glScalef(zoom, zoom, 1);
             ink.round(-2, 5, WIDTH + 4, HEIGHT, Theme.WINDOW_RADIUS + 2, Theme.WINDOW_SHADOW);
             ink.surface(0, 0, WIDTH, HEIGHT, Theme.WINDOW_RADIUS, Theme.BACKGROUND, Theme.BORDER);
-            ink.icon(0, 20, 20, 24, client.accent());
+            ink.logo(20, 20, 24);
             ink.text(ClientIdentity.NAME, 54, 19, 17, true, Theme.TEXT);
             ink.small("Minecraft " + ClientIdentity.MINECRAFT, 54, 42, Theme.SECONDARY);
             action("Editar HUD", EDIT, mx, my, true);

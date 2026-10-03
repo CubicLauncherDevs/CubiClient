@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/cubiclient-logo.svg" alt="Logo de CubiClient" width="120" height="120" />
+  <img src="docs/assets/newClientIcon.png" alt="Logo de CubiClient" width="120" height="120" />
 </p>
 
 # CubiClient · 0.0.1

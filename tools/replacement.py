@@ -30,6 +30,7 @@ def validate_replacement(original, output):
             raise ValueError("El jar de reemplazo tiene datos corruptos")
         required = (MAIN_CLASS, SCREEN_CLASS, "dev/cubi/core/Hooks.class", "dev/cubi/bridge/Game189.class")
         required += ("assets/cubi/ui/atlas.png", "assets/cubi/ui/atlas.bin", "assets/cubi/ui/OFL-Cantarell.txt")
+        required += tuple("assets/cubi/ui/icon-" + str(size) + ".png" for size in (16, 32, 128))
         for name in required:
             if name not in names:
                 raise ValueError("Falta una clase necesaria: " + name)
